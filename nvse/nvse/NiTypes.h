@@ -1,0 +1,21 @@
+#pragma once
+#include "Utilities.h"
+
+#include "NiRTTI.hpp"
+#include "NiVector3.hpp"
+#include "NiVector4.hpp"
+#include "NiQuaternion.hpp"
+#include "NiSphere.hpp"
+#include "NiTransform.hpp"
+#include "NiFrustum.hpp"
+#include "NiColor.hpp"
+#include "NiPlane.hpp"
+#include "NiSmartPointer.hpp"
+
+#include "NiTArray.hpp"
+#include "NiTLargeArray.hpp"
+#include "NiTMapBase.hpp"
+#include "NiTPointerList.hpp"
+#include "NiTPointerMap.hpp"
+#include "NiTSet.hpp"
+#include "BSTPersistentList.hpp"
