@@ -44,6 +44,8 @@ public:
 	void SetRenderState(D3DRENDERSTATETYPE uiRenderState, UInt32 uiValue, bool bSave) { ThisStdCall(0xB71A10, this, uiRenderState, uiValue, bSave); };
 	void RemoveRenderState(UInt32 uiRenderState) { ThisStdCall(0xE7F550, this, uiRenderState); };
 
+	NiD3DTextureStage* GetStage(UInt32 auiStage) { return m_kStages.GetAt(auiStage); };
+
 	int SetStage(NiD3DTextureStage* uiStageNum, NiD3DTextureStage* pkStage) { return ThisStdCall<int>(0xE802B0, this, uiStageNum, pkStage); };
 
 	void SetVertexShader(NiD3DVertexShader* pkVertexShader) { m_spVertexShader = pkVertexShader; };

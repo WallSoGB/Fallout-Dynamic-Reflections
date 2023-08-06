@@ -97,7 +97,8 @@ void CubemapRenderer::InitHooks() {
 	uiPlayerUpdateRate = max(0, min(uiPlayerUpdateRate, 6));
 	uiWorldUpdateRate = max(0, min(uiWorldUpdateRate, 6));
 
-	ReplaceCall(0xB7C2AA, GetTexture_Hook);
+	ReplaceCall(0xB7C2AA, SLS_GetCubeMap_Hook);
+	ReplaceCall(0xC0D088, Shader30_SetCubeMap_Hook);
 
 	ReplaceCall(0x870C29, Render_Hook);
 	ReplaceCall(0x870F46, SetOffScreenRTGroup_Hook);
@@ -459,7 +460,7 @@ void CubemapRenderer::RenderSceenSpaceCubemap() {
 	}
 }
 
-const NiTexture* __fastcall CubemapRenderer::GetTexture_Hook(ShadowLightShader* apThis, void*, BSShaderPPLightingProperty* apShaderProp, UInt32 auiTextureNumber) {
+const NiTexture* __fastcall CubemapRenderer::SLS_GetCubeMap_Hook(ShadowLightShader* apThis, void*, BSShaderPPLightingProperty* apShaderProp, UInt32 auiTextureNumber) {
 	if (apShaderProp->ulFlags[1] & BSShaderProperty::Wall_RealTimeEnv || bOverride) {
 		// Check if we should use the player cubemap
 		if (apShaderProp->uiFlags & 1) {
@@ -477,6 +478,25 @@ const NiTexture* __fastcall CubemapRenderer::GetTexture_Hook(ShadowLightShader* 
 	if(!pTexture)
 		return BSShaderManager::GetArmorReflectionCubeMap();
 	return pTexture;
+}
+
+void __fastcall CubemapRenderer::Shader30_SetCubeMap_Hook(void* apThis, void*, NiD3DPass* apPass, BSShaderPPLightingProperty* apShaderProp, RenderPassTypes aeRenderPass) {
+	if (apShaderProp->ulFlags[1] & BSShaderProperty::Wall_RealTimeEnv || bOverride) {
+		// Check if we should use the player cubemap
+		if (apShaderProp->uiFlags & 1) {
+			bInUse_Player = true;
+			if (spRenderedCubemapPlayer.m_pObject)
+				apPass->GetStage(1)->m_pkTexture = CubemapRenderer::spRenderedCubemapPlayer;
+		}
+		else {
+			bInUse_World = true;
+			if (spRenderedCubemapWorld.m_pObject)
+				apPass->GetStage(1)->m_pkTexture = CubemapRenderer::spRenderedCubemapWorld;
+		}
+	}
+	else {
+		ThisStdCall(0xC0BC00, apThis, apPass, apShaderProp, aeRenderPass);
+	}
 }
 
 void __fastcall CubemapRenderer::BSShaderProperty_LoadBinary_Hook(BSShaderProperty* apThis, void*, DWORD* kStream) {
