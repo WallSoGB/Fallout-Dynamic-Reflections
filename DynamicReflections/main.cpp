@@ -17,14 +17,11 @@ IDebugLog	   gLog("logs\\DynamicReflections.log");
 
 static LPSTR g_CurrentDir;
 
-bool originalBlurState = *eRendererSettingCollection::Water_bUseWaterReflectionBlur;
-
 bool CanUseReflections() {
 	if (!*eRendererSettingCollection::Water_bUseWaterReflections) {
 		return true;
 	}
 	else {
-		*eRendererSettingCollection::Water_bUseWaterReflectionBlur = originalBlurState;
 		return TESWater::IsUnderwater();
 	}
 }
