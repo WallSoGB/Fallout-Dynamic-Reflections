@@ -164,8 +164,7 @@ void CubemapRenderer::RenderCubemap() {
 	kSceneNodes.RemoveAll();
 
 	if (uiFrameCount > 15) {
-		if (bOverride)
-			SetCubemapFlag(PlayerCharacter::GetSingleton()->Get3D());
+		SetCubemapFlag(PlayerCharacter::GetSingleton()->Get3D());
 
 		uiFrameCount = 0;
 	}
