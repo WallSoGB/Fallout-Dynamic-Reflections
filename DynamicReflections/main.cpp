@@ -71,7 +71,7 @@ bool NVSEPlugin_Load(NVSEInterface* nvse) {
 		ReplaceCall(0x4E28A9, (UInt32)CanUseReflections2);
 
 		// Cubemaps
-		CubemapRenderer::bEnabled = ini.GetBoolValue("Cubemaps", "bEnable", 1);
+		CubemapRenderer::bEnabled = ini.GetBoolValue("Main", "bEnable", 1);
 		if (CubemapRenderer::bEnabled) {
 			CubemapRenderer::bOverride = ini.GetBoolValue("Quality", "bOverride", 1);
 
