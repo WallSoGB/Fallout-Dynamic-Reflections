@@ -145,6 +145,8 @@ void CubemapRenderer::RenderCubemap() {
 	NiDX9Renderer* pRenderer = NiDX9Renderer::GetSingleton();
 	PlayerCharacter* pPlayer = PlayerCharacter::GetSingleton();
 	TESObjectCELL* pCurrCell = pPlayer->GetParentCell();
+	NiNode* pSkyRoot = TESMain::GetSkyRoot();
+	NiPoint3 skyPos = pSkyRoot->GetWorldTranslate();
 
 	if (pCurrCell)
 		bIsInterior = pCurrCell->IsInterior();
@@ -255,6 +257,9 @@ void CubemapRenderer::RenderCubemap() {
 			if (bDumpNextFrame)
 				uiUpdateRate = 6;
 
+			pSkyRoot->SetLocalTranslate(pPlayerCubeCam->GetWorldTranslate());
+			pSkyRoot->Update(g_defaultUpdateData);
+
 			UpdateFog(pShadowSceneNode, CubemapRenderer::fPlayerViewDistance);
 			pPlayerCubeCam->RenderCubeMap(0, uiUpdateRate, bDumpNextFrame ? BSCullingProcess::BSCP_CULL_ALLPASS : BSCullingProcess::BSCP_CULL_FORCEMULTIBOUNDSNOUPDATE, true);
 			RestoreFog(pShadowSceneNode);
@@ -299,8 +304,6 @@ void CubemapRenderer::RenderCubemap() {
 						pWorldCubeCam->SetLocalTranslate(playerPos);
 					}
 
-					NiNode* pSkyRoot = TESMain::GetSkyRoot();
-					NiPoint3 skyPos = pSkyRoot->GetWorldTranslate();
 					BGSTerrainManager* pTerrainManager = TES::GetWorldSpace()->GetTerrainManager();
 
 					// Add nodes to the list to be rendered
@@ -335,10 +338,6 @@ void CubemapRenderer::RenderCubemap() {
 					pWorldCubeCam->RenderCubeMap(&kSceneNodes, uiWorldUpdateRate, BSCullingProcess::BSCP_CULL_FORCEMULTIBOUNDSNOUPDATE, bRenderLandLOD);
 					RestoreFog(pShadowSceneNode);
 
-					// Restore original sky position
-					pSkyRoot->SetLocalTranslate(skyPos);
-					pSkyRoot->Update(g_defaultUpdateData);
-
 					spRenderedCubemapWorld = static_cast<NiRenderedCubeMap*>(pWorldCubeCam->spTexture->spRenderedTextures[0].m_pObject);
 
 					if (bLowQuality) {
@@ -355,6 +354,10 @@ void CubemapRenderer::RenderCubemap() {
 		// Restore original player visibility, again
 		pPlayerNode1->SetAppCulled(bPlayerVisible1);
 		pPlayerNode2->SetAppCulled(bPlayerVisible2);
+
+		// Restore original sky position
+		pSkyRoot->SetLocalTranslate(skyPos);
+		pSkyRoot->Update(g_defaultUpdateData);
 
 		pShadowSceneNode->bDisableLightUpdate = bLightProcessing;
 	}
