@@ -55,12 +55,19 @@ static TESObjectCELL* pLastCell = nullptr;
 
 #define bDumpNextFrame *(bool*)0x11F5AF1
 
+#define bDebugLog false
+
 static UInt32 uiFrameCount = 0;
 
 static BSRenderedTexturePtr spScreenCrop = nullptr;
 
 static const float fWeaponHeightOffset = 107.0f;
 static const float fPlayerEyeHeightOffset = 43.0f;
+
+static const UInt32 uiMaxCubemapUseTime = 500; // In frames
+static UInt32 uiWorldCubemapUnuseTimer = 0;
+static UInt32 uiPlayerCubemapUnuseTimer = 0;
+static UInt32 uiPlayerInteriorCubemapUnuseTimer = 0;
 
 void SetCubemapFlag(NiNode* pObject) {
 	UInt32 uiChildCount = pObject->m_kChildren.GetSize();
@@ -141,6 +148,63 @@ void CubemapRenderer::RestoreFog(ShadowSceneNode* apScene) {
 	apScene->spFog->fStartDistance = fOrgStart;
 }
 
+void CubemapRenderer::ManageTextureResidency(UInt32 uiForcePurge) {
+	if (bInUse_World)
+		uiWorldCubemapUnuseTimer = 0;
+	else
+		uiWorldCubemapUnuseTimer++;
+
+	if (bInUse_Player)
+		uiPlayerCubemapUnuseTimer = 0;
+	else
+		uiPlayerCubemapUnuseTimer++;
+
+	if (bIsInterior && bScreenSpaceInterior) {
+		if (!bInUse_Player)
+			uiPlayerInteriorCubemapUnuseTimer++;
+		else
+			uiPlayerInteriorCubemapUnuseTimer = 0;
+	}
+
+
+	if ((uiWorldCubemapUnuseTimer >= uiMaxCubemapUseTime || uiForcePurge & PURGE_WORLD) && spWorldCubeCam.m_pObject && spWorldCubeCam->spTexture.m_pObject) {
+		spWorldCubeCam->spTexture = nullptr;
+		spRenderedCubemapWorld = nullptr;
+
+		uiWorldCubemapUnuseTimer = 0;
+#if bDebugLog
+		_MESSAGE("[ CubemapRenderer::RenderCubemap ] Purging world cube map");
+#endif
+	}
+
+	
+	if ((uiPlayerCubemapUnuseTimer >= uiMaxCubemapUseTime || uiForcePurge & PURGE_PLAYER) && spPlayerCubeCam.m_pObject && spPlayerCubeCam->spTexture.m_pObject) {
+		spPlayerCubeCam->spTexture = nullptr;
+		spRenderedCubemapPlayer = nullptr;
+
+		uiPlayerCubemapUnuseTimer = 0;
+#if bDebugLog
+		_MESSAGE("[ CubemapRenderer::RenderCubemap ] Purging player cube map");
+#endif
+	}
+
+	if ((uiPlayerInteriorCubemapUnuseTimer >= uiMaxCubemapUseTime || uiForcePurge & PURGE_INTERIOR) && spScreenCrop.m_pObject && spFakeCubemap.m_pObject) {
+		spScreenCrop = nullptr;
+		spFakeCubemap = nullptr;
+
+		uiPlayerInteriorCubemapUnuseTimer = 0;
+
+#if bDebugLog
+		_MESSAGE("[ CubemapRenderer::RenderCubemap ] Purging interior player cube map");
+#endif
+	}
+
+	if (uiFrameCount > 15) {
+		SetCubemapFlag(PlayerCharacter::GetSingleton()->Get3D());
+		uiFrameCount = 0;
+	}
+}
+
 void CubemapRenderer::RenderCubemap() {
 	if (!bEnabled)
 		return;
@@ -154,26 +218,26 @@ void CubemapRenderer::RenderCubemap() {
 	if (pCurrCell)
 		bIsInterior = pCurrCell->IsInterior();
 
+	ManageTextureResidency();
+
+	static bool bCheckCellAgain = false;
 	bool bCellChanged = false;
 	bool bThirdPerson = pPlayer->IsThirdPerson();
 
-	if (!pLastCell || pLastCell != pCurrCell) {
+	if (!pLastCell || pLastCell != pCurrCell || bCheckCellAgain) {
 		if (pCurrCell) {
 			pCameraNode = nullptr;
 			bCellChanged = true;
 			pLastCell = pCurrCell;
 			spRenderedCubemapWorld = nullptr;
+			bCheckCellAgain = false;
 		}
 	}
 
-	kSceneNodes.RemoveAll();
-
-	if (uiFrameCount > 15) {
-		SetCubemapFlag(PlayerCharacter::GetSingleton()->Get3D());
-
-		uiFrameCount = 0;
-	}
 	if (bCellChanged) {
+#if bDebugLog
+		_MESSAGE("[ CubemapRenderer::RenderCubemap ] Cell changed");
+#endif
 		if (TES::IsCellLoaded(pCurrCell, true)) {
 			NiNode* pStaticsNode = pCurrCell->GetChildNode(TESObjectCELL::CN_STATIC);
 			pCameraNode = static_cast<NiNode*>(pStaticsNode->GetObjectByNameEx("CellCamera"));
@@ -183,14 +247,24 @@ void CubemapRenderer::RenderCubemap() {
 					if (pStaticsNode) {
 						pCameraNode = static_cast<NiNode*>(pStaticsNode->GetObjectByNameEx("CellCamera"));
 						if (pCameraNode) {
+#if bDebugLog
+							_MESSAGE("[ CubemapRenderer::RenderCubemap ] CellCamera found");
+#endif
 							break;
 						}
 					}
 					else {
+#if bDebugLog
+						_MESSAGE("[ CubemapRenderer::RenderCubemap ] CellCamera not found");
+#endif
 						pCameraNode = nullptr;
 					}
 				}
 			}
+		}
+		else {
+			_MESSAGE("[ CubemapRenderer::RenderCubemap ] Cell not loaded");
+			bCheckCellAgain = true;
 		}
 	}
 
@@ -239,10 +313,21 @@ void CubemapRenderer::RenderCubemap() {
 
 		// Player cubemap
 		if (eShouldSkip != SKIP_PLAYER && (bInUse_Player && !bLowQuality || bWorldOverride || bInteriorOverride || bDumpNextFrame)) {
+
+			ManageTextureResidency(PURGE_INTERIOR);
+
+
 			if (!spPlayerCubeCam.m_pObject) {
-				_MESSAGE("[ CubemapRenderer::RenderCubemap ] Creating player cubemap");
-				spPlayerCubeCam = BSCubeMapCamera::Create(pSceneGraph, CubemapRenderer::fPlayerViewDistance, uiPlayerCubemapSize, D3DFMT_A16B16G16R16F);
+				_MESSAGE("[ CubemapRenderer::RenderCubemap ] Creating player cubemap camera");
+				spPlayerCubeCam = BSCubeMapCamera::Create(pSceneGraph, fPlayerViewDistance, uiPlayerCubemapSize, D3DFMT_A16B16G16R16F);
 				spPlayerCubeCam->SetName("Player Reflections");
+			}
+
+			if (!spPlayerCubeCam->spTexture.m_pObject) {
+#if bDebugLog
+				_MESSAGE("[ CubemapRenderer::RenderCubemap ] Creating player cubemap texture");
+#endif
+				spPlayerCubeCam->spTexture = BSTextureManager::NewRenderedCubemap(uiPlayerCubemapSize, 0, D3DFMT_A16B16G16R16F, 0);
 			}
 
 			BSCubeMapCamera* pPlayerCubeCam = spPlayerCubeCam;
@@ -284,14 +369,21 @@ void CubemapRenderer::RenderCubemap() {
 
 		// World cubemap
 		if (!bUseCellCamera && (bNoWorldInInteriors && bIsInterior || bNoWorldInExteriors)) {
-			spRenderedCubemapWorld = nullptr;
+			ManageTextureResidency(PURGE_WORLD);
 		}
 		else {
 			if (bUseCellCamera || (!bHighQuality && (bInUse_World || bLowQuality))) {
 				if (!spWorldCubeCam.m_pObject) {
-					_MESSAGE("[ CubemapRenderer::RenderCubemap ] Creating world cubemap");
-					spWorldCubeCam = BSCubeMapCamera::Create(nullptr, CubemapRenderer::fWorldViewDistance, uiWorldCubemapSize, D3DFMT_A16B16G16R16F);
+					_MESSAGE("[ CubemapRenderer::RenderCubemap ] Creating world cubemap camera");
+					spWorldCubeCam = BSCubeMapCamera::Create(nullptr, fWorldViewDistance, uiWorldCubemapSize, D3DFMT_A16B16G16R16F);
 					spWorldCubeCam->SetName("World Reflections");
+				}
+
+				if (!spWorldCubeCam->spTexture.m_pObject) {
+#if bDebugLog
+					_MESSAGE("[ CubemapRenderer::RenderCubemap ] Creating world cubemap texture");
+#endif
+					spWorldCubeCam->spTexture = BSTextureManager::NewRenderedCubemap(uiWorldCubemapSize, 0, D3DFMT_A16B16G16R16F, 0);
 				}
 
 				BSCubeMapCamera* pWorldCubeCam = spWorldCubeCam;
@@ -301,6 +393,9 @@ void CubemapRenderer::RenderCubemap() {
 				}
 
 				if (bUseCellCamera || (!bIsInterior && !bHighQuality)) {
+
+					kSceneNodes.RemoveAll();
+
 					if (!pCameraNode) {
 						// Adjust camera position to use eye height
 						playerPos.z += fPlayerEyeHeightOffset;
@@ -336,7 +431,7 @@ void CubemapRenderer::RenderCubemap() {
 						}
 						
 					}
-
+					
 					UpdateFog(pShadowSceneNode, CubemapRenderer::fWorldViewDistance);
 					pWorldCubeCam->RenderCubeMap(&kSceneNodes, uiWorldUpdateRate, BSCullingProcess::BSCP_CULL_FORCEMULTIBOUNDSNOUPDATE, bRenderLandLOD);
 					RestoreFog(pShadowSceneNode);
@@ -387,40 +482,43 @@ void CubemapRenderer::RenderCubemap() {
 
 // oh god oh god it's so wrong
 void CubemapRenderer::RenderSceenSpaceCubemap() {
-	if (!bEnabled || !bScreenSpaceInterior)
+	if (!bEnabled || !(bScreenSpaceInterior && bIsInterior))
 		return;
 
 	PlayerCharacter* pPlayer = PlayerCharacter::GetSingleton();
 
-	if (bIsInterior && bInUse_Player && !pPlayer->bThirdPerson) {
+	if (bInUse_Player && !pPlayer->bThirdPerson) {
 		BSRenderedTexture* apTexture = TESMain::GetMainISTexture();
 		NiDX9Renderer* pRenderer = NiDX9Renderer::GetSingleton();
 
 		static bool bResSet = false;
 		static NiRect<UInt32> rect;
 		static NiRect<UInt32> rect2;
+		static UInt32 uiCubeSize = uiScreenSpaceCubemapSize;
 
 		// Get source buffer
 		Ni2DBuffer* pSourceBuffer = apTexture->GetTexture(0)->GetBuffer();
 
+
+
+		// Create the texture that will be used
+		if (!spScreenCrop.m_pObject) {
+#if bDebugLog
+			_MESSAGE("[ CubemapRenderer::RenderSceenSpaceCubemap ] Creating a crop texture %i x %i", uiCubeSize, uiCubeSize);
+#endif
+			spScreenCrop = BSTextureManager::NewRenderedTexture(uiCubeSize, uiCubeSize, BSTM_CF_NO_DEPTH | BSTM_CF_NO_STENCIL, D3DFMT_A16B16G16R16F, 0);
+		}
+
+		if (!spFakeCubemap.m_pObject) {
+#if bDebugLog
+			_MESSAGE("[ CubemapRenderer::RenderSceenSpaceCubemap ] Creating a fake cubemap texture %i x %i", uiCubeSize, uiCubeSize);
+#endif
+			spFakeCubemap = BSTextureManager::NewRenderedCubemap(uiCubeSize, BSTM_CF_NO_DEPTH | BSTM_CF_NO_STENCIL, D3DFMT_A16B16G16R16F, 0);
+		}
+
 		if (!bResSet) {
 			UInt32 uiFullHeight = pSourceBuffer->GetHeight();
 			UInt32 uiFullWidth = pSourceBuffer->GetWidth();
-
-			UInt32 uiCubeSize = uiScreenSpaceCubemapSize;
-
-			// Create the texture that will be used
-			if (!spScreenCrop.m_pObject) {
-				_MESSAGE("[ CubemapRenderer::RenderSceenSpaceCubemap ] Creating a crop texture %i x %i", uiCubeSize, uiCubeSize);
-				spScreenCrop = BSTextureManager::NewRenderedTexture(uiCubeSize, uiCubeSize, BSTM_CF_NO_DEPTH | BSTM_CF_NO_STENCIL, D3DFMT_A16B16G16R16F, 0);
-				spScreenCrop->IncRefCount();
-			}
-
-			if (!spFakeCubemap.m_pObject) {
-				_MESSAGE("[ CubemapRenderer::RenderSceenSpaceCubemap ] Creating a fake cubemap texture %i x %i", uiCubeSize, uiCubeSize);
-				spFakeCubemap = BSTextureManager::NewRenderedCubemap(uiCubeSize, BSTM_CF_NO_DEPTH | BSTM_CF_NO_STENCIL, D3DFMT_A16B16G16R16F, 0);
-				spFakeCubemap->IncRefCount();
-			}
 
 			// Create a crop rectangle
 			UInt32 top = 0;
@@ -457,51 +555,61 @@ void CubemapRenderer::RenderSceenSpaceCubemap() {
 		for (UInt32 i = 0; i < 6; i++) {
 			spScreenCrop->spRenderedTextures[0]->m_spBuffer->FastCopy(static_cast<NiRenderedCubeMap*>(spFakeCubemap->spRenderedTextures[0].m_pObject)->m_aspFaceBuffers[i], nullptr, 0, 0);
 		}
+		
+		ManageTextureResidency(PURGE_PLAYER);
 
 		spRenderedCubemapPlayer = static_cast<NiRenderedCubeMap*>(spFakeCubemap->spRenderedTextures[0].m_pObject);
-		spRenderedCubemapWorld = nullptr;
 		BSShaderManager::SetEyeReflectionCubeMap(pSourceEyeCubeMap);
+
 		bInUse_Player = false;
 	}
 }
 
 const NiTexture* __fastcall CubemapRenderer::SLS_GetCubeMap_Hook(ShadowLightShader* apThis, void*, BSShaderPPLightingProperty* apShaderProp, UInt32 auiTextureNumber) {
+	NiTexture* pTexture = apShaderProp->ppTextures[BSTextureSet::BSSM_CubeMap][auiTextureNumber];
+
 	if (apShaderProp->ulFlags[1] & BSShaderProperty::Wall_RealTimeEnv || bOverride) {
 		// Check if we should use the player cubemap
 		if (apShaderProp->uiFlags & 1) {
 			bInUse_Player = true;
 			if (spRenderedCubemapPlayer.m_pObject)
-				return spRenderedCubemapPlayer;
+				pTexture = spRenderedCubemapPlayer;
 		}
 		else {
 			bInUse_World = true;
 			if (spRenderedCubemapWorld.m_pObject)
-				return spRenderedCubemapWorld;
+				pTexture = spRenderedCubemapWorld;
 		}
 	}
-	NiTexture* pTexture = apShaderProp->ppTextures[BSTextureSet::BSSM_CubeMap][auiTextureNumber];
+
 	if(!pTexture)
 		return BSShaderManager::GetArmorReflectionCubeMap();
 	return pTexture;
 }
 
 void __fastcall CubemapRenderer::Shader30_SetCubeMap_Hook(void* apThis, void*, NiD3DPass* apPass, BSShaderPPLightingProperty* apShaderProp, RenderPassTypes aeRenderPass) {
+	NiTexture* pCubemapTex = nullptr;
+
 	if (apShaderProp->ulFlags[1] & BSShaderProperty::Wall_RealTimeEnv || bOverride) {
 		// Check if we should use the player cubemap
 		if (apShaderProp->uiFlags & 1) {
 			bInUse_Player = true;
 			if (spRenderedCubemapPlayer.m_pObject)
-				apPass->GetStage(1)->m_pkTexture = CubemapRenderer::spRenderedCubemapPlayer;
+				pCubemapTex = CubemapRenderer::spRenderedCubemapPlayer;
 		}
 		else {
 			bInUse_World = true;
 			if (spRenderedCubemapWorld.m_pObject)
-				apPass->GetStage(1)->m_pkTexture = CubemapRenderer::spRenderedCubemapWorld;
+				pCubemapTex = CubemapRenderer::spRenderedCubemapWorld;
 		}
 	}
-	else {
+
+
+	if (pCubemapTex)
+		apPass->GetStage(1)->m_pkTexture = pCubemapTex;
+	else
 		ThisStdCall(0xC0BC00, apThis, apPass, apShaderProp, aeRenderPass);
-	}
+
 }
 
 void __fastcall CubemapRenderer::BSShaderProperty_LoadBinary_Hook(BSShaderProperty* apThis, void*, DWORD* kStream) {

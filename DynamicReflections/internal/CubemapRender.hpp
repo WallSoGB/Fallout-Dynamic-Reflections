@@ -18,6 +18,13 @@ public:
 		SKIP_ALL = 2,
 	};
 
+	enum PurgeTextures {
+		PURGE_WORLD = 1,
+		PURGE_PLAYER = 2,
+		PURGE_INTERIOR = 4,
+		PURGE_ALL = PURGE_WORLD | PURGE_PLAYER | PURGE_INTERIOR,
+	};
+
 	static bool bIsInterior;
 
 	static NiSourceCubeMapPtr spExteriorCubemap;
@@ -56,6 +63,7 @@ public:
 	static void InitHooks();
 	static void UpdateFog(ShadowSceneNode* apScene, float afViewDistance);
 	static void RestoreFog(ShadowSceneNode* apScene);
+	static void ManageTextureResidency(UInt32 uiForcePurge = 0);
 	static void RenderCubemap();
 	static void RenderSceenSpaceCubemap();
 	static const NiTexture* __fastcall SLS_GetCubeMap_Hook(ShadowLightShader* apThis, void*, BSShaderPPLightingProperty* apShaderProp, UInt32 auiTextureNumber);
