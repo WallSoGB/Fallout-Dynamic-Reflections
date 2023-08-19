@@ -114,6 +114,9 @@ void CubemapRenderer::InitHooks() {
 	// Fix water reflection toggles
 	ReplaceCall(0x4E2B8D, (UInt32)TESWater::ReflectionFix_Hook);
 	ReplaceCall(0x4E28A9, (UInt32)TESWater::ReflectionFix_Hook2);
+
+	// Disables RefID writes into the shader property. Should be safe.
+	PatchMemoryNop(0x4B6E0E, 5);
 }
 
 static float fOrgEnd;
