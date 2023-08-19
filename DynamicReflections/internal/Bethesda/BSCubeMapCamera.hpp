@@ -32,7 +32,7 @@ public:
 	NiPointer<BSShaderAccumulator> spAccumulator;
 
 	static BSCubeMapCamera* CreateObject();
-	static BSCubeMapCamera* Create(NiNode* apSceneNonde, float afViewDistance, UInt32 auiTextureSize, D3DFORMAT aeFormat);
+	static BSCubeMapCamera* Create(NiNode* apSceneNonde, float afViewDistance, UInt32 auiTextureSize = 0, D3DFORMAT aeFormat = D3DFMT_UNKNOWN);
 
 	void SetupTransformation(UInt32 auiFace);
 

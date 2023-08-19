@@ -30,9 +30,9 @@ BSCubeMapCamera* BSCubeMapCamera::Create(NiNode* apSceneNonde, float afViewDista
 		pCamera->m_kViewFrustum.m_fNear = 5.0f;
 		pCamera->IncRefCount();
 
-		pCamera->spTexture = BSTextureManager::NewRenderedCubemap(auiTextureSize, 0, aeFormat, 0);
-		pCamera->spTexture->IncRefCount();
-
+		if (auiTextureSize && aeFormat)
+			pCamera->spTexture = BSTextureManager::NewRenderedCubemap(auiTextureSize, 0, aeFormat, 0);
+		
 		return pCamera;
 	}
 	return nullptr;
