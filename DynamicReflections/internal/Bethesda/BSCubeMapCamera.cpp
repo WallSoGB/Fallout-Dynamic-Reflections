@@ -117,7 +117,7 @@ void BSCubeMapCamera::RenderCubeMap(NiTPointerListBase<NiAVObject*>* apNodeList,
 		if (abRenderWater) {
 			*TESWater::bPauseTime = true;
 			TES::GetSingleton()->pWaterManager->UpdateLOD(this, false);
-			TES::GetSingleton()->pWaterManager->RenderWater(this, false);
+			TES::GetSingleton()->pWaterManager->RenderWater(this, true);
 			TESWater::SetCanReflectAtCustomLvl(false);
 			TESWater::SetCanReflectAtWaterLvl(false);
 			*TESWater::bPauseTime = false;
