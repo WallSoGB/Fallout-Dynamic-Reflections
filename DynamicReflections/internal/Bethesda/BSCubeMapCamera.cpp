@@ -27,6 +27,7 @@ BSCubeMapCamera* BSCubeMapCamera::Create(NiNode* apSceneNonde, float afViewDista
 		pCamera->pSceneNode = apSceneNonde;
 		pCamera->spAccumulator->pActiveShadowSceneNode = BSShaderManager::GetShadowSceneNode(BSSM_SSN_WORLD);
 		pCamera->m_kViewFrustum.m_fFar = afViewDistance;
+		pCamera->m_kViewFrustum.m_fNear = 5.0f;
 		pCamera->IncRefCount();
 
 		pCamera->spTexture = BSTextureManager::NewRenderedCubemap(auiTextureSize, 0, aeFormat, 0);
