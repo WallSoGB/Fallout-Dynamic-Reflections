@@ -263,7 +263,9 @@ void CubemapRenderer::RenderCubemap() {
 			}
 		}
 		else {
+#if bDebugLog
 			_MESSAGE("[ CubemapRenderer::RenderCubemap ] Cell not loaded");
+#endif
 			bCheckCellAgain = true;
 		}
 	}
