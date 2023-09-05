@@ -13,7 +13,7 @@ class BSMultiBoundNode;
 class BSResizableTriShape;
 class BSSegmentedTriShape;
 class NiCloningProcess;
-class NiGeometryData;
+class NiGeometry;
 class NiLines;
 class NiNode;
 class NiParticles;
@@ -35,7 +35,7 @@ public:
 	virtual NiNode*						IsNiNode();
 	virtual BSFadeNode*					IsFadeNode();
 	virtual BSMultiBoundNode*			IsMultiBoundNode();
-	virtual NiGeometryData*				IsGeometry();
+	virtual NiGeometry*					IsGeometry();
 	virtual NiTriBasedGeom*				IsTriBasedGeometry();
 	virtual NiTriStrips*				IsTriStrips();
 	virtual NiTriShape*					IsTriShape();

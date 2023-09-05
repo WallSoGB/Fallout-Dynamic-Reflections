@@ -15,7 +15,7 @@ public:
 
 	NiTListBase<ShadowSceneLight*>		lLightList;
 	float								fUnk06C;
-	UInt32								uiFlags; // Originally RefID, but unused
+	UInt32								uiExtraFlags; // Originally RefID, but unused
 	bool								bLightListChanged;
 	NiTListItem<ShadowSceneLight*>*		pLastLight; // last processed light?
 

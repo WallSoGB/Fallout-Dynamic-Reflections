@@ -12,6 +12,8 @@ public:
 	virtual void RecreateRendererData();
 
 	LPDIRECT3DPIXELSHADER9 m_hShader;
+
+	static NiD3DPixelShader* Create(NiDX9Renderer* apRenderer);
 };
 
 ASSERT_SIZE(NiD3DPixelShader, 0x30);

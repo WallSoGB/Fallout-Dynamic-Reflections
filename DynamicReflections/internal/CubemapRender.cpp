@@ -36,6 +36,7 @@ float CubemapRenderer::fExteriorBrightnessMult;
 bool CubemapRenderer::bScreenSpaceInterior;
 bool CubemapRenderer::bNoWorldInInteriors;
 bool CubemapRenderer::bNoWorldInExteriors;
+bool CubemapRenderer::bUseAmbient;
 bool CubemapRenderer::bEnabled;
 bool CubemapRenderer::bOverride;
 bool CubemapRenderer::bOverrideBrightness;
@@ -68,6 +69,7 @@ static const UInt32 uiMaxCubemapUseTime = 500; // In frames
 static UInt32 uiWorldCubemapUnuseTimer = 0;
 static UInt32 uiPlayerCubemapUnuseTimer = 0;
 static UInt32 uiPlayerInteriorCubemapUnuseTimer = 0;
+static bool bThirdPerson = false;
 
 void SetCubemapFlag(NiNode* pObject) {
 	UInt32 uiChildCount = pObject->m_kChildren.GetSize();
@@ -82,8 +84,8 @@ void SetCubemapFlag(NiNode* pObject) {
 				pShadeProp = static_cast<BSShaderPPLightingProperty*>(pChild->GetProperty(NiProperty::SHADE));
 				
 				// Mark shader property as player's
-				if (pShadeProp && (pShadeProp->uiFlags & 1) == 0 && pShadeProp->m_eShaderType == NiShadeProperty::kType_PPLighting && pShadeProp->HasEnvironmentMap()) {
-					pShadeProp->uiFlags |= 1;
+				if (pShadeProp && (pShadeProp->uiExtraFlags & 1) == 0 && pShadeProp->m_eShaderType == NiShadeProperty::kType_PPLighting && pShadeProp->HasEnvironmentMap()) {
+					pShadeProp->uiExtraFlags |= 1;
 				}
 			}
 
@@ -107,13 +109,13 @@ void CubemapRenderer::InitHooks() {
 	ReplaceCall(0xB7C2AA, SLS_GetCubeMap_Hook);
 	ReplaceCall(0xC0D088, Shader30_SetCubeMap_Hook);
 
-	ReplaceCall(0x870C29, Render_Hook);
+	ReplaceCall(0x8727DE, Render_Hook);
 	ReplaceCall(0x870F46, SetOffScreenRTGroup_Hook);
+
 	if (CubemapRenderer::bOverride)
 		ReplaceCall(0xB68DCC, BSShaderProperty_LoadBinary_Hook);
 
-	if (CubemapRenderer::bOverrideBrightness)
-		ReplaceCall(0xB7DC5B, UpdateToggles_Hook);
+	ReplaceCall(0xB7DC5B, UpdateToggles_Hook);
 	
 	// Fix water flow speed
 	ReplaceCall(0x559450, TESWater::RenderSurface_Hook);
@@ -124,6 +126,15 @@ void CubemapRenderer::InitHooks() {
 
 	// Disables RefID writes into the shader property. Should be safe.
 	PatchMemoryNop(0x4B6E0E, 5);
+
+	// Removes the mipmap check for rendered textures
+	PatchMemoryNop(0xE7EA9F, 0x21);
+
+	// Replaces cubemap creator with a modified version allowing for mipmaps
+	ReplaceCall(0xE901D5, NiDX9RenderedCubeMapData::CreateSurf);
+	
+	// Replace ShadowLightShader pixel shader create func
+	ReplaceCall(0xB78907, BSShader::CreatePixelShader);
 }
 
 static float fOrgEnd;
@@ -149,25 +160,29 @@ void CubemapRenderer::RestoreFog(ShadowSceneNode* apScene) {
 }
 
 void CubemapRenderer::ManageTextureResidency(UInt32 uiForcePurge) {
-	if (bInUse_World)
+	bool bWorldCubemap = spWorldCubeCam.m_pObject && spWorldCubeCam->spTexture.m_pObject && spRenderedCubemapWorld.m_pObject;
+	bool bPlayerCubemap = spPlayerCubeCam.m_pObject && spPlayerCubeCam->spTexture.m_pObject && spRenderedCubemapPlayer.m_pObject;
+	bool bFakeCubemap = spScreenCrop.m_pObject && spFakeCubemap.m_pObject;
+
+	if (bInUse_World || (bInUse_Player && bLowQuality || bIsInterior))
 		uiWorldCubemapUnuseTimer = 0;
-	else
+	else if (bWorldCubemap)
 		uiWorldCubemapUnuseTimer++;
 
-	if (bInUse_Player)
+	if (bInUse_Player || (bInUse_World && bHighQuality))
 		uiPlayerCubemapUnuseTimer = 0;
-	else
+	else if (bPlayerCubemap)
 		uiPlayerCubemapUnuseTimer++;
 
 	if (bIsInterior && bScreenSpaceInterior) {
-		if (!bInUse_Player)
-			uiPlayerInteriorCubemapUnuseTimer++;
-		else
+		if (bInUse_Player)
 			uiPlayerInteriorCubemapUnuseTimer = 0;
+		else if (bPlayerCubemap)
+			uiPlayerInteriorCubemapUnuseTimer++;
 	}
 
 
-	if ((uiWorldCubemapUnuseTimer >= uiMaxCubemapUseTime || uiForcePurge & PURGE_WORLD) && spWorldCubeCam.m_pObject && spWorldCubeCam->spTexture.m_pObject) {
+	if ((uiWorldCubemapUnuseTimer >= uiMaxCubemapUseTime || uiForcePurge & PURGE_WORLD) && bWorldCubemap) {
 		spWorldCubeCam->spTexture = nullptr;
 		spRenderedCubemapWorld = nullptr;
 
@@ -177,8 +192,8 @@ void CubemapRenderer::ManageTextureResidency(UInt32 uiForcePurge) {
 #endif
 	}
 
-	
-	if ((uiPlayerCubemapUnuseTimer >= uiMaxCubemapUseTime || uiForcePurge & PURGE_PLAYER) && spPlayerCubeCam.m_pObject && spPlayerCubeCam->spTexture.m_pObject) {
+
+	if ((uiPlayerCubemapUnuseTimer >= uiMaxCubemapUseTime || uiForcePurge & PURGE_PLAYER) && bPlayerCubemap) {
 		spPlayerCubeCam->spTexture = nullptr;
 		spRenderedCubemapPlayer = nullptr;
 
@@ -188,7 +203,7 @@ void CubemapRenderer::ManageTextureResidency(UInt32 uiForcePurge) {
 #endif
 	}
 
-	if ((uiPlayerInteriorCubemapUnuseTimer >= uiMaxCubemapUseTime || uiForcePurge & PURGE_INTERIOR) && spScreenCrop.m_pObject && spFakeCubemap.m_pObject) {
+	if ((uiPlayerInteriorCubemapUnuseTimer >= uiMaxCubemapUseTime || uiForcePurge & PURGE_INTERIOR) && bFakeCubemap) {
 		spScreenCrop = nullptr;
 		spFakeCubemap = nullptr;
 
@@ -222,7 +237,7 @@ void CubemapRenderer::RenderCubemap() {
 
 	static bool bCheckCellAgain = false;
 	bool bCellChanged = false;
-	bool bThirdPerson = pPlayer->IsThirdPerson();
+	bThirdPerson = pPlayer->IsThirdPerson();
 
 	if (!pLastCell || pLastCell != pCurrCell || bCheckCellAgain) {
 		if (pCurrCell) {
@@ -476,6 +491,13 @@ void CubemapRenderer::RenderCubemap() {
 		bDumpNextFrame = false;
 	}
 
+	// Regenerate cubemap mipmaps
+	if (spRenderedCubemapPlayer.m_pObject)
+		spRenderedCubemapPlayer->GetDX9RendererData()->GetD3DTexture()->SetAutoGenFilterType(D3DTEXF_LINEAR);
+
+	if (spRenderedCubemapWorld.m_pObject)
+		spRenderedCubemapWorld->GetDX9RendererData()->GetD3DTexture()->SetAutoGenFilterType(D3DTEXF_LINEAR);
+
 	bInUse_World = false;
 	if (eShouldSkip == SKIP_NONE)
 		bInUse_Player = false;
@@ -572,7 +594,7 @@ const NiTexture* __fastcall CubemapRenderer::SLS_GetCubeMap_Hook(ShadowLightShad
 
 	if (apShaderProp->ulFlags[1] & BSShaderProperty::Wall_RealTimeEnv || bOverride) {
 		// Check if we should use the player cubemap
-		if (apShaderProp->uiFlags & 1) {
+		if (apShaderProp->uiExtraFlags & 1) {
 			bInUse_Player = true;
 			if (spRenderedCubemapPlayer.m_pObject)
 				pTexture = spRenderedCubemapPlayer;
@@ -594,7 +616,7 @@ void __fastcall CubemapRenderer::Shader30_SetCubeMap_Hook(void* apThis, void*, N
 
 	if (apShaderProp->ulFlags[1] & BSShaderProperty::Wall_RealTimeEnv || bOverride) {
 		// Check if we should use the player cubemap
-		if (apShaderProp->uiFlags & 1) {
+		if (apShaderProp->uiExtraFlags & 1) {
 			bInUse_Player = true;
 			if (spRenderedCubemapPlayer.m_pObject)
 				pCubemapTex = CubemapRenderer::spRenderedCubemapPlayer;
@@ -623,9 +645,9 @@ void __fastcall CubemapRenderer::BSShaderProperty_LoadBinary_Hook(BSShaderProper
 	}
 }
 
-const void __fastcall CubemapRenderer::Render_Hook(TESMain* apThis) {
+void* __fastcall CubemapRenderer::Render_Hook(void* apThis) {
 	RenderCubemap();
-	ThisStdCall(0x8727D0, apThis);
+	return (bool*)(0x11C7ADC+4);
 }
 
 void __fastcall CubemapRenderer::SetOffScreenRTGroup_Hook(TESMain* apThis, void*, BSRenderedTexture* pTexture, BOOL bIsMSAA, UInt32 uiClearMode) {
@@ -635,17 +657,41 @@ void __fastcall CubemapRenderer::SetOffScreenRTGroup_Hook(TESMain* apThis, void*
 
 void __fastcall CubemapRenderer::UpdateToggles_Hook(ShadowLightShader* apThis, void*, RenderPassTypes aeRenderPassType, NiGeometry* apGeo, BSShaderPPLightingProperty* apShaderProp, NiMaterialProperty* apMatProp, BSRenderPass* apRenderPass, NiAlphaProperty* apAlphaProp) {
 	ThisStdCall(0xB795B0, apThis, aeRenderPassType, apGeo, apShaderProp, apMatProp, apRenderPass, apAlphaProp);
+
+
+
 	if (apShaderProp->IsLandscape() || aeRenderPassType >= BSSM_2x_ENVMAP && aeRenderPassType <= BSSM_2x_ENVMAP_EYE) {
 		if ((aeRenderPassType - 584) <= 3) {
 			if (apShaderProp->HasEnvironmentMap() && (apShaderProp->ulFlags[1] & BSShaderProperty::Wall_RealTimeEnv || bOverride)) {
-				if (bIsInterior && bScreenSpaceInterior && !spRenderedCubemapWorld.m_pObject || bNoWorldInExteriors || bNoWorldInInteriors) {
-					// Make sure we are applying to player's shaders
-					if (apShaderProp->uiFlags & 1) {
+
+				bool bIsPlayer = apShaderProp->uiExtraFlags & 1;
+				bool bFakeInterior = (bIsInterior && bScreenSpaceInterior);
+
+				if (bOverrideBrightness) {
+					if (bFakeInterior && !spRenderedCubemapWorld.m_pObject || bNoWorldInExteriors || bNoWorldInInteriors) {
+						// Make sure we are applying to player's shaders
+						if (bIsPlayer) {
+							ShadowLightShaderManager::PixelConstants::GetToggles()->fSpecularity = apShaderProp->fEnvMapScale * bIsInterior ? fInteriorBrightnessMult : fExteriorBrightnessMult;
+						}
+					}
+					else {
 						ShadowLightShaderManager::PixelConstants::GetToggles()->fSpecularity = apShaderProp->fEnvMapScale * bIsInterior ? fInteriorBrightnessMult : fExteriorBrightnessMult;
 					}
 				}
+
+				NiColorA* pAmbientConstant = ShadowLightShaderManager::PixelConstants::GetAmbientColor();
+
+
+				if (bUseAmbient && bFakeInterior && (!bIsPlayer || (bIsPlayer && bThirdPerson))) {
+					NiColor* pAmbient = Sky::GetInstance()->GetAmbientColor();
+					pAmbientConstant->r = pAmbient->r;
+					pAmbientConstant->g = pAmbient->g;
+					pAmbientConstant->b = pAmbient->b;
+				}
 				else {
-					ShadowLightShaderManager::PixelConstants::GetToggles()->fSpecularity = apShaderProp->fEnvMapScale * bIsInterior ? fInteriorBrightnessMult : fExteriorBrightnessMult;
+					pAmbientConstant->r = 1.0f;
+					pAmbientConstant->g = 1.0f;
+					pAmbientConstant->b = 1.0f;
 				}
 			}
 		}

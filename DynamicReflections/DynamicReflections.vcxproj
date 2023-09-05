@@ -170,8 +170,10 @@ copy "$(TargetDir)$(TargetName).pdb" "C:\Symbols\$(TargetName).pdb"</Command>
     <ClCompile Include="internal\Bethesda\BGSTerrainManager.cpp" />
     <ClCompile Include="internal\Bethesda\BSCubeMapCamera.cpp" />
     <ClCompile Include="internal\Bethesda\BSCullingProcess.cpp" />
+    <ClCompile Include="internal\Bethesda\BSFile.cpp" />
     <ClCompile Include="internal\Bethesda\BSRenderedTexture.cpp" />
     <ClCompile Include="internal\Bethesda\BSRenderer.cpp" />
+    <ClCompile Include="internal\Bethesda\BSShader.cpp" />
     <ClCompile Include="internal\Bethesda\BSShaderAccumulator.cpp" />
     <ClCompile Include="internal\Bethesda\BSShaderUtil.cpp" />
     <ClCompile Include="internal\Bethesda\BSString.cpp" />
@@ -192,6 +194,8 @@ copy "$(TargetDir)$(TargetName).pdb" "C:\Symbols\$(TargetName).pdb"</Command>
     <ClCompile Include="internal\Gamebryo\NiAVObject.cpp" />
     <ClCompile Include="internal\Gamebryo\NiBound.cpp" />
     <ClCompile Include="internal\Gamebryo\NiCullingProcess.cpp" />
+    <ClCompile Include="internal\Gamebryo\NiD3DPixelShader.cpp" />
+    <ClCompile Include="internal\Gamebryo\NiDX9RenderedCubeMapData.cpp" />
     <ClCompile Include="internal\Gamebryo\NiDX9Renderer.cpp" />
     <ClCompile Include="internal\Gamebryo\NiFixedString.cpp" />
     <ClCompile Include="internal\Gamebryo\NiFrustumPlanes.cpp" />

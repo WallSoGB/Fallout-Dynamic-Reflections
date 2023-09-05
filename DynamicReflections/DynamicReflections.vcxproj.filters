@@ -128,6 +128,18 @@
     <ClCompile Include="..\nvse\nvse\SafeWrite.cpp">
       <Filter>nvse</Filter>
     </ClCompile>
+    <ClCompile Include="internal\Bethesda\BSFile.cpp">
+      <Filter>internal\Game\Bethesda</Filter>
+    </ClCompile>
+    <ClCompile Include="internal\Bethesda\BSShader.cpp">
+      <Filter>internal\Game\Bethesda</Filter>
+    </ClCompile>
+    <ClCompile Include="internal\Gamebryo\NiD3DPixelShader.cpp">
+      <Filter>internal\Game\Gamebryo</Filter>
+    </ClCompile>
+    <ClCompile Include="internal\Gamebryo\NiDX9RenderedCubeMapData.cpp">
+      <Filter>internal\Game\Gamebryo</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="internal\Defines.hpp">

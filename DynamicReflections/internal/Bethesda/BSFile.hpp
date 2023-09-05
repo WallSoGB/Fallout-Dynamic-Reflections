@@ -30,6 +30,8 @@ public:
 	UInt32 uiIOSize;
 	UInt32 uiTrueFilePos;
 	UInt32 uiFileSize;
+
+	UInt32 ReadBuffer(void* apData, UInt32 auiSize);
 };
 
 ASSERT_SIZE(BSFile, 0x158);

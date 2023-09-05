@@ -1,6 +1,7 @@
 #pragma once
 
 class NiPixelFormat {
+public:
 	enum Format
 	{
 		FORMAT_RGB = 0x0,
@@ -81,7 +82,7 @@ class NiPixelFormat {
 	UInt8 m_ucBitsPerPixel;
 	NiPixelFormat::Format m_eFormat;
 	NiPixelFormat::Tiling m_eTiling;
-	UInt32 m_uiRendererHint;
+	D3DFORMAT m_uiRendererHint;
 	UInt32 m_uiExtraData;
 	NiComponentSpec m_akComponents[4];
 };

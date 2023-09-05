@@ -55,6 +55,23 @@ public:
 		ALL = AMBIENT | DIFFUSE | TEXTURE | SPECULAR | SHADOW | CANOPYSHADOW | OPT,
 	};
 
+	struct ShaderPackage {
+		struct RawShader {
+			char cFileName[260];
+			DWORD shader;
+		};
+
+		const char* pcPackagePath;
+		DWORD dword4;
+		NiTStringMap<RawShader*> kShaders;
+
+		static ShaderPackage* GetInstance() { return *(ShaderPackage**)0x11F9498; }
+		RawShader* GetShader(const char* apcShaderName) {
+			return ThisStdCall<RawShader*>(0xB7FAC0, this, apcShaderName);
+		}
+	};
+
+
 	static bool* bIsHDR;
 
 	static __forceinline ShadowSceneNode* GetShadowSceneNode(eSceneGraphEnum aeType) {

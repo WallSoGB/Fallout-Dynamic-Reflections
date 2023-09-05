@@ -3,6 +3,8 @@
 #include "NiObjectNET.hpp"
 #include "NiPixelFormat.hpp"
 
+class NiDX9TextureData;
+
 NiSmartPointer(NiTexture);
 
 class NiTexture : public NiObjectNET {
@@ -88,4 +90,8 @@ public:
 	RendererData* m_pkRendererData;
 	NiTexture* m_pkPrev;
 	NiTexture* m_pkNext;
+
+	NiDX9TextureData* GetDX9RendererData() {
+		return reinterpret_cast<NiDX9TextureData*>(m_pkRendererData);
+	};
 };

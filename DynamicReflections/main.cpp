@@ -89,6 +89,7 @@ bool NVSEPlugin_Load(NVSEInterface* nvse) {
 			CubemapRenderer::bScreenSpaceInterior = ini.GetBoolValue("Quality", "bScreenSpaceInterior", 1);
 			CubemapRenderer::uiScreenSpaceCubemapSize = ini.GetLongValue("Quality", "uiScreenSpaceCubemapSize", 128);
 			CubemapRenderer::uiScreenSpaceBlurRadius = ini.GetLongValue("Quality", "uiScreenSpaceBlurRadius", 10);
+			CubemapRenderer::bUseAmbient = ini.GetLongValue("Quality", "bUseAmbient", 1);
 
 
 			// Player settings
