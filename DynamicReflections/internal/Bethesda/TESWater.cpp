@@ -20,19 +20,15 @@ void TESWater::RenderWater(NiCamera* apSceneCamera, bool abForceDisplay) {
 }
 
 bool TESWater::ReflectionFix_Hook() {
-	if (!*eRendererSettingCollection::Water_bUseWaterReflections) {
+	if (!*eRendererSettingCollection::Water_bUseWaterReflections)
 		return true;
-	}
-	else {
+	else
 		return TESWater::IsUnderwater();
-	}
 }
 
 TESObjectCELL* __fastcall TESWater::ReflectionFix_Hook2(TES* tes) {
-	if (!*eRendererSettingCollection::Water_bUseWaterReflections) {
+	if (!*eRendererSettingCollection::Water_bUseWaterReflections)
 		return (TESObjectCELL*)1;
-	}
-	else {
+	else
 		return tes->pInteriorCell;
-	}
 }

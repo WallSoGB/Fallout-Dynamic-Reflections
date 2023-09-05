@@ -17,24 +17,6 @@ IDebugLog	   gLog("logs\\DynamicReflections.log");
 
 static LPSTR g_CurrentDir;
 
-bool CanUseReflections() {
-	if (!*eRendererSettingCollection::Water_bUseWaterReflections) {
-		return true;
-	}
-	else {
-		return TESWater::IsUnderwater();
-	}
-}
-
-TESObjectCELL* __fastcall CanUseReflections2(TES* tes) {
-	if (!*eRendererSettingCollection::Water_bUseWaterReflections) {
-		return (TESObjectCELL*)1;
-	}
-	else {
-		return tes->pInteriorCell;
-	}
-}
-
 void MessageHandler(NVSEMessagingInterface::Message* msg)
 {
 	if (msg->type == NVSEMessagingInterface::kMessage_DeferredInit) {
@@ -64,8 +46,8 @@ bool NVSEPlugin_Load(NVSEInterface* nvse) {
 
 
 		// Fix for broken reflection toggles
-		ReplaceCall(0x4E2B8D, (UInt32)CanUseReflections);
-		ReplaceCall(0x4E28A9, (UInt32)CanUseReflections2);
+		ReplaceCall(0x4E2B8D, (UInt32)TESWater::ReflectionFix_Hook);
+		ReplaceCall(0x4E28A9, (UInt32)TESWater::ReflectionFix_Hook2);
 
 		// Cubemaps
 		CubemapRenderer::bEnabled = ini.GetBoolValue("Main", "bEnable", 1);
