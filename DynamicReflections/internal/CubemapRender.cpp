@@ -143,14 +143,8 @@ void CubemapRenderer::UpdateFog(ShadowSceneNode* apScene, float afViewDistance) 
 	fOrgEnd = apScene->spFog->fEndDistance;
 	fOrgStart = apScene->spFog->fStartDistance;
 
-	float fNewEnd = afViewDistance * 0.9f;
-	float fNewStart = afViewDistance * 0.8f;
-
-	if (fNewEnd < fOrgEnd)
-		apScene->spFog->fEndDistance = fNewEnd;
-
-	if (fNewStart < fOrgStart)
-		apScene->spFog->fStartDistance = fNewStart;
+	apScene->spFog->fEndDistance = afViewDistance * 0.8f;
+	apScene->spFog->fStartDistance = afViewDistance * 0.6f;
 }
 
 void CubemapRenderer::RestoreFog(ShadowSceneNode* apScene) {
