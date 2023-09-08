@@ -15,7 +15,8 @@ public:
 	enum SkipMode {
 		SKIP_NONE = 0,
 		SKIP_PLAYER = 1,
-		SKIP_ALL = 2,
+		SKIP_WORLD = 2,
+		SKIP_ALL = 3,
 	};
 
 	enum PurgeTextures {
@@ -33,6 +34,8 @@ public:
 	static BSCubeMapCameraPtr spPlayerCubeCam;
 	static BSCubeMapCameraPtr spWorldCubeCam;
 	
+	static bool bRendering;
+
 	static bool bEnabled;
 	static bool bOverride;
 	static bool bOverrideBrightness;
@@ -64,12 +67,16 @@ public:
 	static void UpdateFog(ShadowSceneNode* apScene, float afViewDistance);
 	static void RestoreFog(ShadowSceneNode* apScene);
 	static void ManageTextureResidency(UInt32 uiForcePurge = 0);
+	static bool CanRenderInteriorCubemap();
 
-	static BSCubeMapCamera* CreatePlayerCamera();
-	static BSCubeMapCamera* CreateWorldCamera();
 
-	static BSRenderedTexture* CreatePlayerTexture();
-	static BSRenderedTexture* CreateWorldTexture();
+	static BSCubeMapCamera* GetPlayerCamera();
+	static BSCubeMapCamera* GetWorldCamera();
+
+	static BSRenderedTexture* GetPlayerTexture();
+	static BSRenderedTexture* GetWorldTexture();
+
+
 
 	static void CreateScreenSpaceTextures(UInt32 uiCubeSize);
 
