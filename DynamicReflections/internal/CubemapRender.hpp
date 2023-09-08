@@ -25,8 +25,6 @@ public:
 		PURGE_ALL = PURGE_WORLD | PURGE_PLAYER | PURGE_INTERIOR,
 	};
 
-	static bool bIsInterior;
-
 	static NiSourceCubeMapPtr spExteriorCubemap;
 	static NiSourceCubeMapPtr spInteriorCubemap;
 	static NiTexture* pSourceEyeCubeMap;

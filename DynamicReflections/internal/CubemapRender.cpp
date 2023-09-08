@@ -44,7 +44,6 @@ bool CubemapRenderer::bHighQuality;
 bool CubemapRenderer::bLowQuality;
 bool CubemapRenderer::bRenderObjectLOD;
 bool CubemapRenderer::bRenderLandLOD;
-bool CubemapRenderer::bIsInterior = false;
 
 static NiTPointerListBase<NiAVObject*> kSceneNodes;
 
@@ -164,7 +163,7 @@ void CubemapRenderer::ManageTextureResidency(UInt32 uiForcePurge) {
 	bool bPlayerCubemap = spPlayerCubeCam.m_pObject && spPlayerCubeCam->spTexture.m_pObject && spRenderedCubemapPlayer.m_pObject;
 	bool bFakeCubemap = spScreenCrop.m_pObject && spFakeCubemap.m_pObject;
 
-	if (bInUse_World || (bInUse_Player && bLowQuality || bIsInterior))
+	if (bInUse_World || (bInUse_Player && bLowQuality || *BSShaderManager::bIsInInterior))
 		uiWorldCubemapUnuseTimer = 0;
 	else if (bWorldCubemap)
 		uiWorldCubemapUnuseTimer++;
@@ -174,7 +173,7 @@ void CubemapRenderer::ManageTextureResidency(UInt32 uiForcePurge) {
 	else if (bPlayerCubemap)
 		uiPlayerCubemapUnuseTimer++;
 
-	if (bIsInterior && bScreenSpaceInterior) {
+	if (*BSShaderManager::bIsInInterior && bScreenSpaceInterior) {
 		if (bInUse_Player)
 			uiPlayerInteriorCubemapUnuseTimer = 0;
 		else if (bPlayerCubemap)
@@ -229,9 +228,6 @@ void CubemapRenderer::RenderCubemap() {
 	TESObjectCELL* pCurrCell = pPlayer->GetParentCell();
 	NiNode* pSkyRoot = TESMain::GetSkyRoot();
 	NiPoint3 skyPos = pSkyRoot->GetWorldTranslate();
-
-	if (pCurrCell)
-		bIsInterior = pCurrCell->IsInterior();
 
 	ManageTextureResidency();
 
@@ -288,7 +284,7 @@ void CubemapRenderer::RenderCubemap() {
 	bool bUseCellCamera = bInUse_World && pCameraNode;
 	SkipMode eShouldSkip = SKIP_NONE;
 
-	if (bScreenSpaceInterior && bIsInterior)
+	if (bScreenSpaceInterior && *BSShaderManager::bIsInInterior)
 		eShouldSkip = SKIP_ALL;
 
 	if (eShouldSkip && bUseCellCamera)
@@ -302,7 +298,7 @@ void CubemapRenderer::RenderCubemap() {
 
 	if (eShouldSkip != SKIP_ALL) {
 		SceneGraph* pSceneGraph = TESMain::GetWorldRoot();
-		ShadowSceneNode* pShadowSceneNode = BSShaderManager::GetShadowSceneNode(BSSM_SSN_WORLD);
+		ShadowSceneNode* pShadowSceneNode = BSShaderManager::GetShadowSceneNode(BSShaderManager::BSSM_SSN_WORLD);
 
 		NiNode* pPlayerNode1 = pPlayer->GetNode(true);
 		NiNode* pPlayerNode2 = pPlayer->GetNode(false);
@@ -316,8 +312,8 @@ void CubemapRenderer::RenderCubemap() {
 		pShadowSceneNode->bDisableLightUpdate = true;
 
 		bool bWorldOverride = bInUse_World && bHighQuality;
-		bool bInteriorOverride = bInUse_World && bIsInterior;
-		bool bLQInteriorOverride = bIsInterior && bLowQuality;
+		bool bInteriorOverride = bInUse_World && *BSShaderManager::bIsInInterior;
+		bool bLQInteriorOverride = *BSShaderManager::bIsInInterior && bLowQuality;
 
 		// Check player's visibility
 		bool bPlayerVisible1 = pPlayerNode1->GetAppCulled();
@@ -353,12 +349,12 @@ void CubemapRenderer::RenderCubemap() {
 				pWeaponNode = static_cast<NiNode*>(pPlayerNode1->GetObjectByNameEx("Weapon"));
 
 			NiPoint3 weaponPos = pWeaponNode->GetWorldTranslate();
-			if (pPlayer->IsWeaponOut() && !bIsInterior && !bHighQuality)
+			if (pPlayer->IsWeaponOut() && !*BSShaderManager::bIsInInterior && !bHighQuality)
 				pPlayerCubeCam->SetLocalTranslate(bThirdPerson ? &playerPos : &weaponPos);
 			else
 				pPlayerCubeCam->SetLocalTranslate(&playerPos);
 
-			UInt32 uiUpdateRate = bIsInterior ? min(uiPlayerUpdateRate + 1, 6) : uiPlayerUpdateRate;
+			UInt32 uiUpdateRate = *BSShaderManager::bIsInInterior ? min(uiPlayerUpdateRate + 1, 6) : uiPlayerUpdateRate;
 			if (bDumpNextFrame)
 				uiUpdateRate = 6;
 
@@ -372,7 +368,7 @@ void CubemapRenderer::RenderCubemap() {
 			// Setting player cube map
 			spRenderedCubemapPlayer = static_cast<NiRenderedCubeMap*>(pPlayerCubeCam->spTexture->spRenderedTextures[0].m_pObject);
 
-			if (bInUse_World && (bHighQuality || bIsInterior)) {
+			if (bInUse_World && (bHighQuality || *BSShaderManager::bIsInInterior)) {
 				spRenderedCubemapWorld = spRenderedCubemapPlayer;
 			}
 			else {
@@ -385,7 +381,7 @@ void CubemapRenderer::RenderCubemap() {
 		pPlayerNode2->SetAppCulled(bPlayerVisible2);
 
 		// World cubemap
-		if (!bUseCellCamera && (bNoWorldInInteriors && bIsInterior || bNoWorldInExteriors)) {
+		if (!bUseCellCamera && (bNoWorldInInteriors && *BSShaderManager::bIsInInterior || bNoWorldInExteriors)) {
 			ManageTextureResidency(PURGE_WORLD);
 		}
 		else {
@@ -409,7 +405,7 @@ void CubemapRenderer::RenderCubemap() {
 					pWorldCubeCam->SetLocalTranslate(pCameraNode->GetWorldTranslate());
 				}
 
-				if (bUseCellCamera || (!bIsInterior && !bHighQuality)) {
+				if (bUseCellCamera || (!*BSShaderManager::bIsInInterior && !bHighQuality)) {
 
 					kSceneNodes.RemoveAll();
 
@@ -506,7 +502,7 @@ void CubemapRenderer::RenderCubemap() {
 
 // oh god oh god it's so wrong
 void CubemapRenderer::RenderSceenSpaceCubemap() {
-	if (!bEnabled || !(bScreenSpaceInterior && bIsInterior))
+	if (!bEnabled || !(bScreenSpaceInterior && *BSShaderManager::bIsInInterior))
 		return;
 
 	PlayerCharacter* pPlayer = PlayerCharacter::GetSingleton();
@@ -665,17 +661,17 @@ void __fastcall CubemapRenderer::UpdateToggles_Hook(ShadowLightShader* apThis, v
 			if (apShaderProp->HasEnvironmentMap() && (apShaderProp->ulFlags[1] & BSShaderProperty::Wall_RealTimeEnv || bOverride)) {
 
 				bool bIsPlayer = apShaderProp->uiExtraFlags & 1;
-				bool bFakeInterior = (bIsInterior && bScreenSpaceInterior);
+				bool bFakeInterior = (*BSShaderManager::bIsInInterior && bScreenSpaceInterior);
 
 				if (bOverrideBrightness) {
 					if (bFakeInterior && !spRenderedCubemapWorld.m_pObject || bNoWorldInExteriors || bNoWorldInInteriors) {
 						// Make sure we are applying to player's shaders
 						if (bIsPlayer) {
-							ShadowLightShaderManager::PixelConstants::GetToggles()->fSpecularity = apShaderProp->fEnvMapScale * bIsInterior ? fInteriorBrightnessMult : fExteriorBrightnessMult;
+							ShadowLightShaderManager::PixelConstants::GetToggles()->fSpecularity = apShaderProp->fEnvMapScale * *BSShaderManager::bIsInInterior ? fInteriorBrightnessMult : fExteriorBrightnessMult;
 						}
 					}
 					else {
-						ShadowLightShaderManager::PixelConstants::GetToggles()->fSpecularity = apShaderProp->fEnvMapScale * bIsInterior ? fInteriorBrightnessMult : fExteriorBrightnessMult;
+						ShadowLightShaderManager::PixelConstants::GetToggles()->fSpecularity = apShaderProp->fEnvMapScale * *BSShaderManager::bIsInInterior ? fInteriorBrightnessMult : fExteriorBrightnessMult;
 					}
 				}
 

@@ -140,6 +140,9 @@
     <ClCompile Include="internal\Gamebryo\NiDX9RenderedCubeMapData.cpp">
       <Filter>internal\Game\Gamebryo</Filter>
     </ClCompile>
+    <ClCompile Include="Internal\Bethesda\BSShaderManager.cpp">
+      <Filter>internal\Game\Bethesda</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="internal\Defines.hpp">

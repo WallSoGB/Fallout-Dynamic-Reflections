@@ -25,7 +25,7 @@ BSCubeMapCamera* BSCubeMapCamera::Create(NiNode* apSceneNonde, float afViewDista
 	BSCubeMapCamera* pCamera = BSCubeMapCamera::CreateObject();
 	if (pCamera) {
 		pCamera->pSceneNode = apSceneNonde;
-		pCamera->spAccumulator->pActiveShadowSceneNode = BSShaderManager::GetShadowSceneNode(BSSM_SSN_WORLD);
+		pCamera->spAccumulator->pActiveShadowSceneNode = BSShaderManager::GetShadowSceneNode(BSShaderManager::BSSM_SSN_WORLD);
 		pCamera->m_kViewFrustum.m_fFar = afViewDistance;
 		pCamera->m_kViewFrustum.m_fNear = 5.0f;
 		pCamera->IncRefCount();
@@ -84,7 +84,7 @@ void BSCubeMapCamera::RenderCubeMap(NiTPointerListBase<NiAVObject*>* apNodeList,
 	NiDX9Renderer* pRenderer = BSShaderManager::GetRenderer();
 	NiColorA orgColor;
 	pRenderer->GetBackgroundColor(&orgColor);
-	pRenderer->SetBackgroundColor(&Sky::GetInstance()->pColors[Sky::SC_SKY_LOWER]);
+	pRenderer->SetBackgroundColor(&Sky::GetInstance()->pColors[Sky::SC_FOG]);
 
 	bool bUseReflectionsOrg = false;
 	bool bUseDepthOrg = false;

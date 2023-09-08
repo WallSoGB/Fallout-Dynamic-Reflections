@@ -175,6 +175,7 @@ copy "$(TargetDir)$(TargetName).pdb" "C:\Symbols\$(TargetName).pdb"</Command>
     <ClCompile Include="internal\Bethesda\BSRenderer.cpp" />
     <ClCompile Include="internal\Bethesda\BSShader.cpp" />
     <ClCompile Include="internal\Bethesda\BSShaderAccumulator.cpp" />
+    <ClCompile Include="Internal\Bethesda\BSShaderManager.cpp" />
     <ClCompile Include="internal\Bethesda\BSShaderUtil.cpp" />
     <ClCompile Include="internal\Bethesda\BSString.cpp" />
     <ClCompile Include="internal\Bethesda\BSTextureManager.cpp" />
