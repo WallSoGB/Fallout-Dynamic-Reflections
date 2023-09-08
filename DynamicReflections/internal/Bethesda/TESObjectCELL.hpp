@@ -69,7 +69,7 @@ public:
 		UInt32* getValuesFrom;
 	};
 
-	union CELL_DATA {
+	union CellData {
 		ExteriorData* pCellDataExterior;
 		InteriorData* pCellDataInterior;
 	};
@@ -81,12 +81,12 @@ public:
 		CN_STATIC = 0x3,
 		CN_DYNAMIC = 0x4,
 		CN_OCCLUSION_PLANE = 0x5,
-		CN_UNK6 = 0x6, // These should be portals, rooms etc.
-		CN_UNK7 = 0x7,
-		CN_UNK8 = 0x8,
-		CN_UNK9 = 0x9,
-		CN_UNK10 = 0xA,
-		CN_WATERLOD = 0xB,
+		CN_PORTAL = 0x6,
+		CN_MULTIBOUND = 0x7,
+		CN_COLLISION = 0x8,
+		CN_LIGHT_MARKER = 0x9,
+		CN_SOUND_MARKER = 0xA,
+		CN_WATER_WADE = 0xB,
 		CN_MAX = 0xC,
 	};
 
@@ -103,44 +103,44 @@ public:
 		CIF_FOG_POWER = 0x100,
 	};
 
-	TESFullName name;
-	UInt8 sCellFlags;
-	UInt8 sCellGameFlags;
-	UInt8 cCellState;
-	UInt8 byte27;
-	ExtraDataList ExtraList;
-	CELL_DATA pCellData;
-	TESObjectLAND* pCellLand;
-	float fWaterHeight;
-	bool bAutoWaterLoaded;
-	TESTexture noiseTexture;
-	NavMesh** pNavMeshes;
-	UInt32 unk68[6];
-	RTL_CRITICAL_SECTION kSpinLock;
-	UInt32 unk98;
-	UInt32 unk9C;
-	SInt32 iNumNonActorRefs;
-	SInt32 iNumRefs;
-	UInt16 usCountVisibleDistant;
-	UInt16 usVisibleWhenDistantCountLoaded;
-	BSSimpleList<NiPointer<TESObjectREFR>> References;
-	NiNode* niNodeB4;
-	NiNode* niNodeB8;
-	UInt32 unkBC;
-	TESWorldSpace* pWorldSpace;
-	LoadedData* pLoadedData;
-	float fLODFadeOut;
-	UInt8 byteCC;
-	UInt8 byteCD;
-	UInt8 byteCE;
-	UInt8 byteCF;
-	UInt8 byteD0;
-	bool bCellDetached;
-	UInt8 byteD2;
-	UInt8 byteD3;
-	BSPortalGraphPtr spPortalGraph;
-	BGSLightingTemplate* pLightingTemplate;
-	UInt32 uiInheritFlags;
+	TESFullName								name;
+	UInt8									sCellFlags;
+	UInt8									sCellGameFlags;
+	UInt8									cCellState;
+	UInt8									byte27;
+	ExtraDataList							ExtraList;
+	CellData								pCellData;
+	TESObjectLAND*							pCellLand;
+	float									fWaterHeight;
+	bool									bAutoWaterLoaded;
+	TESTexture								noiseTexture;
+	NavMesh**								pNavMeshes;
+	UInt32									unk68[6];
+	RTL_CRITICAL_SECTION					kSpinLock;
+	UInt32									unk98;
+	UInt32									unk9C;
+	SInt32									iNumNonActorRefs;
+	SInt32									iNumRefs;
+	UInt16									usCountVisibleDistant;
+	UInt16									usVisibleWhenDistantCountLoaded;
+	BSSimpleList<NiPointer<TESObjectREFR>>	ReferencesA;
+	NiNodePtr								spLightMarkerNode;
+	NiNodePtr								spSoundMarkerNode;
+	UInt32									unkBC;
+	TESWorldSpace*							pWorldSpace;
+	LoadedData*								pLoadedData;
+	float									fLODFadeOut;
+	UInt8									byteCC;
+	UInt8									byteCD;
+	UInt8									byteCE;
+	UInt8									byteCF;
+	UInt8									byteD0;
+	bool									bCellDetached;
+	UInt8									byteD2;
+	UInt8									byteD3;
+	BSPortalGraphPtr						spPortalGraph;
+	BGSLightingTemplate*					pLightingTemplate;
+	UInt32									uiInheritFlags;
 
 	__forceinline bool IsInterior() { return (sCellFlags & 1) != 0; }
 

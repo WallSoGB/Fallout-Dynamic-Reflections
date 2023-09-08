@@ -60,11 +60,25 @@ public:
 	static float fInteriorBrightnessMult;
 
 	static void InitHooks();
+	static bool SearchCamera(TESObjectCELL* apCell);
 	static void UpdateFog(ShadowSceneNode* apScene, float afViewDistance);
 	static void RestoreFog(ShadowSceneNode* apScene);
 	static void ManageTextureResidency(UInt32 uiForcePurge = 0);
+
+	static BSCubeMapCamera* CreatePlayerCamera();
+	static BSCubeMapCamera* CreateWorldCamera();
+
+	static BSRenderedTexture* CreatePlayerTexture();
+	static BSRenderedTexture* CreateWorldTexture();
+
+	static void CreateScreenSpaceTextures(UInt32 uiCubeSize);
+
 	static void RenderCubemap();
+
 	static void RenderSceenSpaceCubemap();
+
+	static void SaveCubemapToFiles();
+
 	static const NiTexture* __fastcall SLS_GetCubeMap_Hook(ShadowLightShader* apThis, void*, BSShaderPPLightingProperty* apShaderProp, UInt32 auiTextureNumber);
 	static void __fastcall Shader30_SetCubeMap_Hook(void* apThis, void*, NiD3DPass* apPass, BSShaderPPLightingProperty* apShaderProp, RenderPassTypes aeRenderPass);
 	static void* __fastcall Render_Hook(void* apThis);

@@ -136,6 +136,40 @@ void CubemapRenderer::InitHooks() {
 	ReplaceCall(0xB78907, BSShader::CreatePixelShader);
 }
 
+bool CubemapRenderer::SearchCamera(TESObjectCELL* apCell)
+{
+	NiNode* pStaticsNode = apCell->GetChildNode(TESObjectCELL::CN_STATIC);
+	pCameraNode = static_cast<NiNode*>(pStaticsNode->GetObjectByNameEx("CellCamera"));
+
+	if (pCameraNode) {
+#if bDebugLog
+		_MESSAGE("[ CubemapRenderer::RenderCubemap ] CellCamera found");
+#endif
+		return true;
+	}
+
+	for (UInt32 i = 0; i < TESObjectCELL::CN_MAX; i++) {
+		NiNode* pCellNode = apCell->GetChildNode(static_cast<TESObjectCELL::CELLNODE>(i));
+		if (pCellNode) {
+			pCameraNode = static_cast<NiNode*>(pCellNode->GetObjectByNameEx("CellCamera"));
+			if (pCameraNode) {
+#if bDebugLog
+				_MESSAGE("[ CubemapRenderer::RenderCubemap ] CellCamera found");
+#endif
+				return true;
+			}
+		}
+		else {
+#if bDebugLog
+			_MESSAGE("[ CubemapRenderer::RenderCubemap ] CellCamera not found");
+#endif
+			pCameraNode = nullptr;
+		}
+	}
+
+	return false;
+}
+
 static float fOrgEnd;
 static float fOrgStart;
 
@@ -157,29 +191,31 @@ void CubemapRenderer::ManageTextureResidency(UInt32 uiForcePurge) {
 	bool bPlayerCubemap = spPlayerCubeCam.m_pObject && spPlayerCubeCam->spTexture.m_pObject && spRenderedCubemapPlayer.m_pObject;
 	bool bFakeCubemap = spScreenCrop.m_pObject && spFakeCubemap.m_pObject;
 
-	if (bInUse_World || (bInUse_Player && bLowQuality || *BSShaderManager::bIsInInterior))
+	if (bInUse_World || (bInUse_Player && bLowQuality))
 		uiWorldCubemapUnuseTimer = 0;
 	else if (bWorldCubemap)
 		uiWorldCubemapUnuseTimer++;
 
-	if (bInUse_Player || (bInUse_World && bHighQuality))
+	if ((bInUse_Player && !(*BSShaderManager::bIsInInterior && bScreenSpaceInterior)) || (bInUse_World && bHighQuality))
 		uiPlayerCubemapUnuseTimer = 0;
 	else if (bPlayerCubemap)
 		uiPlayerCubemapUnuseTimer++;
 
-	if (*BSShaderManager::bIsInInterior && bScreenSpaceInterior) {
-		if (bInUse_Player)
+	if (*BSShaderManager::bIsInInterior) {
+		if (bInUse_Player && bScreenSpaceInterior)
 			uiPlayerInteriorCubemapUnuseTimer = 0;
 		else if (bPlayerCubemap)
 			uiPlayerInteriorCubemapUnuseTimer++;
 	}
-
+	else if (bPlayerCubemap)
+		uiPlayerInteriorCubemapUnuseTimer++;
 
 	if ((uiWorldCubemapUnuseTimer >= uiMaxCubemapUseTime || uiForcePurge & PURGE_WORLD) && bWorldCubemap) {
 		spWorldCubeCam->spTexture = nullptr;
 		spRenderedCubemapWorld = nullptr;
 
 		uiWorldCubemapUnuseTimer = 0;
+
 #if bDebugLog
 		_MESSAGE("[ CubemapRenderer::RenderCubemap ] Purging world cube map");
 #endif
@@ -213,6 +249,72 @@ void CubemapRenderer::ManageTextureResidency(UInt32 uiForcePurge) {
 	}
 }
 
+BSCubeMapCamera* CubemapRenderer::CreatePlayerCamera() {
+	if (!spPlayerCubeCam.m_pObject) {
+		_MESSAGE("[ CubemapRenderer::RenderCubemap ] Creating player cubemap camera");
+		spPlayerCubeCam = BSCubeMapCamera::Create(TESMain::GetWorldRoot(), fPlayerViewDistance, uiPlayerCubemapSize, D3DFMT_A16B16G16R16F);
+		spPlayerCubeCam->SetName("Player Reflections");
+	}
+	return spPlayerCubeCam;
+}
+
+BSCubeMapCamera* CubemapRenderer::CreateWorldCamera() {
+	if (!spWorldCubeCam.m_pObject) {
+		_MESSAGE("[ CubemapRenderer::RenderCubemap ] Creating world cubemap camera");
+		spWorldCubeCam = BSCubeMapCamera::Create(nullptr, fWorldViewDistance, uiWorldCubemapSize, D3DFMT_A16B16G16R16F);
+		spWorldCubeCam->SetName("World Reflections");
+	}
+	return spWorldCubeCam;
+}
+
+BSRenderedTexture* CubemapRenderer::CreatePlayerTexture() {
+	if (!spPlayerCubeCam.m_pObject)
+		return nullptr;
+
+
+	if (spPlayerCubeCam->spTexture.m_pObject)
+		return spPlayerCubeCam->spTexture.m_pObject;
+
+#if bDebugLog
+	_MESSAGE("[ CubemapRenderer::RenderCubemap ] Creating player cubemap texture");
+#endif
+
+	spPlayerCubeCam->spTexture = BSTextureManager::NewRenderedCubemap(uiPlayerCubemapSize, 0, D3DFMT_A16B16G16R16F, 0);
+	return spPlayerCubeCam->spTexture.m_pObject;
+}
+
+BSRenderedTexture* CubemapRenderer::CreateWorldTexture() {
+	if (!spWorldCubeCam.m_pObject)
+		return nullptr;
+
+	if (spWorldCubeCam->spTexture.m_pObject)
+		return spWorldCubeCam->spTexture;
+
+#if bDebugLog
+	_MESSAGE("[ CubemapRenderer::RenderCubemap ] Creating world cubemap texture");
+#endif
+
+	spWorldCubeCam->spTexture = BSTextureManager::NewRenderedCubemap(uiWorldCubemapSize, 0, D3DFMT_A16B16G16R16F, 0);
+	return spWorldCubeCam->spTexture;
+}
+
+void CubemapRenderer::CreateScreenSpaceTextures(UInt32 uiCubeSize) {
+	if (!spScreenCrop.m_pObject) {
+#if bDebugLog
+		_MESSAGE("[ CubemapRenderer::RenderSceenSpaceCubemap ] Creating a crop texture %i x %i", uiCubeSize, uiCubeSize);
+#endif
+		spScreenCrop = BSTextureManager::NewRenderedTexture(uiCubeSize, uiCubeSize, BSTM_CF_NO_DEPTH | BSTM_CF_NO_STENCIL, D3DFMT_A16B16G16R16F, 0);
+	}
+
+	if (!spFakeCubemap.m_pObject) {
+#if bDebugLog
+		_MESSAGE("[ CubemapRenderer::RenderSceenSpaceCubemap ] Creating a fake cubemap texture %i x %i", uiCubeSize, uiCubeSize);
+#endif
+		spFakeCubemap = BSTextureManager::NewRenderedCubemap(uiCubeSize, BSTM_CF_NO_DEPTH | BSTM_CF_NO_STENCIL, D3DFMT_A16B16G16R16F, 0);
+	}
+}
+
+
 void CubemapRenderer::RenderCubemap() {
 	if (!bEnabled)
 		return;
@@ -220,8 +322,6 @@ void CubemapRenderer::RenderCubemap() {
 	NiDX9Renderer* pRenderer = NiDX9Renderer::GetSingleton();
 	PlayerCharacter* pPlayer = PlayerCharacter::GetSingleton();
 	TESObjectCELL* pCurrCell = pPlayer->GetParentCell();
-	NiNode* pSkyRoot = TESMain::GetSkyRoot();
-	NiPoint3 skyPos = pSkyRoot->GetWorldTranslate();
 
 	ManageTextureResidency();
 
@@ -229,14 +329,12 @@ void CubemapRenderer::RenderCubemap() {
 	bool bCellChanged = false;
 	bThirdPerson = pPlayer->IsThirdPerson();
 
-	if (!pLastCell || pLastCell != pCurrCell || bCheckCellAgain) {
-		if (pCurrCell) {
-			pCameraNode = nullptr;
-			bCellChanged = true;
-			pLastCell = pCurrCell;
-			spRenderedCubemapWorld = nullptr;
-			bCheckCellAgain = false;
-		}
+	if ((!pLastCell || pLastCell != pCurrCell || bCheckCellAgain) && pCurrCell) {
+		bCellChanged = true;
+		pLastCell = pCurrCell;
+		pCameraNode = nullptr;
+		spRenderedCubemapWorld = nullptr;
+		bCheckCellAgain = false;
 	}
 
 	if (bCellChanged) {
@@ -244,28 +342,7 @@ void CubemapRenderer::RenderCubemap() {
 		_MESSAGE("[ CubemapRenderer::RenderCubemap ] Cell changed");
 #endif
 		if (TES::IsCellLoaded(pCurrCell, true)) {
-			NiNode* pStaticsNode = pCurrCell->GetChildNode(TESObjectCELL::CN_STATIC);
-			pCameraNode = static_cast<NiNode*>(pStaticsNode->GetObjectByNameEx("CellCamera"));
-			if (!pCameraNode) {
-				for (UInt32 i = 0; i < TESObjectCELL::CN_MAX; i++) {
-					NiNode* pStaticsNode = pCurrCell->GetChildNode(static_cast<TESObjectCELL::CELLNODE>(i));
-					if (pStaticsNode) {
-						pCameraNode = static_cast<NiNode*>(pStaticsNode->GetObjectByNameEx("CellCamera"));
-						if (pCameraNode) {
-#if bDebugLog
-							_MESSAGE("[ CubemapRenderer::RenderCubemap ] CellCamera found");
-#endif
-							break;
-						}
-					}
-					else {
-#if bDebugLog
-						_MESSAGE("[ CubemapRenderer::RenderCubemap ] CellCamera not found");
-#endif
-						pCameraNode = nullptr;
-					}
-				}
-			}
+			SearchCamera(pCurrCell);
 		}
 		else {
 #if bDebugLog
@@ -293,6 +370,8 @@ void CubemapRenderer::RenderCubemap() {
 	if (eShouldSkip != SKIP_ALL) {
 		SceneGraph* pSceneGraph = TESMain::GetWorldRoot();
 		ShadowSceneNode* pShadowSceneNode = BSShaderManager::GetShadowSceneNode(BSShaderManager::BSSM_SSN_WORLD);
+		NiNode* pSkyRoot = TESMain::GetSkyRoot();
+		NiPoint3 skyPos = pSkyRoot->GetWorldTranslate();
 
 		NiNode* pPlayerNode1 = pPlayer->GetNode(true);
 		NiNode* pPlayerNode2 = pPlayer->GetNode(false);
@@ -323,21 +402,8 @@ void CubemapRenderer::RenderCubemap() {
 
 			ManageTextureResidency(PURGE_INTERIOR);
 
-
-			if (!spPlayerCubeCam.m_pObject) {
-				_MESSAGE("[ CubemapRenderer::RenderCubemap ] Creating player cubemap camera");
-				spPlayerCubeCam = BSCubeMapCamera::Create(pSceneGraph, fPlayerViewDistance, uiPlayerCubemapSize, D3DFMT_A16B16G16R16F);
-				spPlayerCubeCam->SetName("Player Reflections");
-			}
-
-			if (!spPlayerCubeCam->spTexture.m_pObject) {
-#if bDebugLog
-				_MESSAGE("[ CubemapRenderer::RenderCubemap ] Creating player cubemap texture");
-#endif
-				spPlayerCubeCam->spTexture = BSTextureManager::NewRenderedCubemap(uiPlayerCubemapSize, 0, D3DFMT_A16B16G16R16F, 0);
-			}
-
-			BSCubeMapCamera* pPlayerCubeCam = spPlayerCubeCam;
+			BSCubeMapCamera* pPlayerCubeCam = CreatePlayerCamera();
+			CreatePlayerTexture();
 
 			if (!pWeaponNode)
 				pWeaponNode = static_cast<NiNode*>(pPlayerNode1->GetObjectByNameEx("Weapon"));
@@ -378,80 +444,67 @@ void CubemapRenderer::RenderCubemap() {
 		if (!bUseCellCamera && (bNoWorldInInteriors && *BSShaderManager::bIsInInterior || bNoWorldInExteriors)) {
 			ManageTextureResidency(PURGE_WORLD);
 		}
-		else {
-			if (bUseCellCamera || (!bHighQuality && (bInUse_World || bLowQuality))) {
-				if (!spWorldCubeCam.m_pObject) {
-					_MESSAGE("[ CubemapRenderer::RenderCubemap ] Creating world cubemap camera");
-					spWorldCubeCam = BSCubeMapCamera::Create(nullptr, fWorldViewDistance, uiWorldCubemapSize, D3DFMT_A16B16G16R16F);
-					spWorldCubeCam->SetName("World Reflections");
+		else if (bUseCellCamera || (!bHighQuality && (bInUse_World || bLowQuality))) {
+
+			BSCubeMapCamera* pWorldCubeCam = CreateWorldCamera();
+
+			CreateWorldTexture();
+
+			if (pCameraNode) {
+				pWorldCubeCam->SetLocalTranslate(pCameraNode->GetWorldTranslate());
+			}
+
+			if (bUseCellCamera || (!*BSShaderManager::bIsInInterior && !bHighQuality)) {
+
+				kSceneNodes.RemoveAll();
+
+				if (!pCameraNode) {
+					// Adjust camera position to use eye height
+					playerPos.z += fPlayerEyeHeightOffset;
+					pWorldCubeCam->SetLocalTranslate(playerPos);
 				}
 
-				if (!spWorldCubeCam->spTexture.m_pObject) {
-#if bDebugLog
-					_MESSAGE("[ CubemapRenderer::RenderCubemap ] Creating world cubemap texture");
-#endif
-					spWorldCubeCam->spTexture = BSTextureManager::NewRenderedCubemap(uiWorldCubemapSize, 0, D3DFMT_A16B16G16R16F, 0);
-				}
+				BGSTerrainManager* pTerrainManager = TES::GetWorldSpace()->GetTerrainManager();
 
-				BSCubeMapCamera* pWorldCubeCam = spWorldCubeCam;
-
+				// Add nodes to the list to be rendered
 				if (pCameraNode) {
-					pWorldCubeCam->SetLocalTranslate(pCameraNode->GetWorldTranslate());
+					kSceneNodes.AddHead(pSceneGraph);
+
+					// Temporarily move sky to the camera position - it's normally set to player's
+					pSkyRoot->SetLocalTranslate(pCameraNode->GetWorldTranslate());
+					pSkyRoot->Update(g_defaultUpdateData);
+
+					if (!bThirdPerson) {
+						// Setup player nodes to be visible in mirrors
+						pPlayerNode1->SetAppCulled(true);
+						pPlayerNode2->SetAppCulled(false);
+					}
+				}
+				else {
+					kSceneNodes.AddHead(pSkyRoot);
+
+					if (bRenderObjectLOD) {
+						kSceneNodes.AddHead(BGSTerrainManager::GetRootObjectLODNode());
+					}
+
+					if (bRenderLandLOD) {
+						kSceneNodes.AddHead(BGSTerrainManager::GetRootLandLODNode());
+						kSceneNodes.AddHead(pTerrainManager->GetWaterLODNode());
+					}
+
 				}
 
-				if (bUseCellCamera || (!*BSShaderManager::bIsInInterior && !bHighQuality)) {
+				UpdateFog(pShadowSceneNode, CubemapRenderer::fWorldViewDistance);
+				pWorldCubeCam->RenderCubeMap(&kSceneNodes, uiWorldUpdateRate, BSCullingProcess::BSCP_CULL_FORCEMULTIBOUNDSNOUPDATE, bRenderLandLOD);
+				RestoreFog(pShadowSceneNode);
 
-					kSceneNodes.RemoveAll();
+				spRenderedCubemapWorld = static_cast<NiRenderedCubeMap*>(pWorldCubeCam->spTexture->spRenderedTextures[0].m_pObject);
 
-					if (!pCameraNode) {
-						// Adjust camera position to use eye height
-						playerPos.z += fPlayerEyeHeightOffset;
-						pWorldCubeCam->SetLocalTranslate(playerPos);
-					}
-
-					BGSTerrainManager* pTerrainManager = TES::GetWorldSpace()->GetTerrainManager();
-
-					// Add nodes to the list to be rendered
-					if (pCameraNode) {
-						kSceneNodes.AddHead(pSceneGraph);
-
-						// Temporarily move sky to the camera position - it's normally set to player's
-						pSkyRoot->SetLocalTranslate(pCameraNode->GetWorldTranslate());
-						pSkyRoot->Update(g_defaultUpdateData);
-
-						if (!bThirdPerson) {
-							// Setup player nodes to be visible in mirrors
-							pPlayerNode1->SetAppCulled(true);
-							pPlayerNode2->SetAppCulled(false);
-						}
-					}
-					else {
-						kSceneNodes.AddHead(pSkyRoot);
-
-						if (bRenderObjectLOD) {
-							kSceneNodes.AddHead(BGSTerrainManager::GetRootObjectLODNode());
-						}
-
-						if (bRenderLandLOD) {
-							kSceneNodes.AddHead(BGSTerrainManager::GetRootLandLODNode());
-							kSceneNodes.AddHead(pTerrainManager->GetWaterLODNode());
-						}
-						
-					}
-					
-					UpdateFog(pShadowSceneNode, CubemapRenderer::fWorldViewDistance);
-					pWorldCubeCam->RenderCubeMap(&kSceneNodes, uiWorldUpdateRate, BSCullingProcess::BSCP_CULL_FORCEMULTIBOUNDSNOUPDATE, bRenderLandLOD);
-					RestoreFog(pShadowSceneNode);
-
-					spRenderedCubemapWorld = static_cast<NiRenderedCubeMap*>(pWorldCubeCam->spTexture->spRenderedTextures[0].m_pObject);
-
-					if (bLowQuality) {
-						spRenderedCubemapPlayer = spRenderedCubemapWorld;
-					}
+				if (bLowQuality) {
+					spRenderedCubemapPlayer = spRenderedCubemapWorld;
 				}
 			}
 		}
-
 
 		// Set eye reflection cubemap
 		BSShaderManager::SetEyeReflectionCubeMap(spRenderedCubemapPlayer);
@@ -465,32 +518,22 @@ void CubemapRenderer::RenderCubemap() {
 		pSkyRoot->Update(g_defaultUpdateData);
 
 		pShadowSceneNode->bDisableLightUpdate = bLightProcessing;
+
+		SaveCubemapToFiles();
+
+		// Regenerate cubemap mipmaps
+		if (spRenderedCubemapPlayer.m_pObject)
+			spRenderedCubemapPlayer->GetDX9RendererData()->GetD3DTexture()->SetAutoGenFilterType(D3DTEXF_LINEAR);
+
+		if (spRenderedCubemapWorld.m_pObject)
+			spRenderedCubemapWorld->GetDX9RendererData()->GetD3DTexture()->SetAutoGenFilterType(D3DTEXF_LINEAR);
 	}
-
-	if (bDumpNextFrame) {
-		D3DSURFACE_DESC desc;
-		for (UInt32 uiFace = 0; uiFace < 6; uiFace++) {
-			LPDIRECT3DSURFACE9 pNewSurf;
-			LPDIRECT3DSURFACE9 surf = reinterpret_cast<NiDX92DBufferData*>(spRenderedCubemapPlayer->GetFaceBuffer(uiFace)->m_spRendererData.m_pObject)->m_pkSurface;
-			surf->GetDesc(&desc);
-			pRenderer->GetD3DDevice()->CreateOffscreenPlainSurface(desc.Height, desc.Height, desc.Format, D3DPOOL_SYSTEMMEM, &pNewSurf, 0);
-			pRenderer->GetD3DDevice()->GetRenderTargetData(surf, pNewSurf);
-			D3DXSaveSurfaceToFile(std::format("face_{}.bmp", uiFace).c_str(), D3DXIFF_BMP, pNewSurf, 0, 0);
-			pNewSurf->Release();
-		}
-		bDumpNextFrame = false;
-	}
-
-	// Regenerate cubemap mipmaps
-	if (spRenderedCubemapPlayer.m_pObject)
-		spRenderedCubemapPlayer->GetDX9RendererData()->GetD3DTexture()->SetAutoGenFilterType(D3DTEXF_LINEAR);
-
-	if (spRenderedCubemapWorld.m_pObject)
-		spRenderedCubemapWorld->GetDX9RendererData()->GetD3DTexture()->SetAutoGenFilterType(D3DTEXF_LINEAR);
 
 	bInUse_World = false;
+
 	if (eShouldSkip == SKIP_NONE)
 		bInUse_Player = false;
+
 	uiFrameCount++;
 }
 
@@ -513,22 +556,8 @@ void CubemapRenderer::RenderSceenSpaceCubemap() {
 		// Get source buffer
 		Ni2DBuffer* pSourceBuffer = apTexture->GetTexture(0)->GetBuffer();
 
-
-
 		// Create the texture that will be used
-		if (!spScreenCrop.m_pObject) {
-#if bDebugLog
-			_MESSAGE("[ CubemapRenderer::RenderSceenSpaceCubemap ] Creating a crop texture %i x %i", uiCubeSize, uiCubeSize);
-#endif
-			spScreenCrop = BSTextureManager::NewRenderedTexture(uiCubeSize, uiCubeSize, BSTM_CF_NO_DEPTH | BSTM_CF_NO_STENCIL, D3DFMT_A16B16G16R16F, 0);
-		}
-
-		if (!spFakeCubemap.m_pObject) {
-#if bDebugLog
-			_MESSAGE("[ CubemapRenderer::RenderSceenSpaceCubemap ] Creating a fake cubemap texture %i x %i", uiCubeSize, uiCubeSize);
-#endif
-			spFakeCubemap = BSTextureManager::NewRenderedCubemap(uiCubeSize, BSTM_CF_NO_DEPTH | BSTM_CF_NO_STENCIL, D3DFMT_A16B16G16R16F, 0);
-		}
+		CreateScreenSpaceTextures(uiCubeSize);
 
 		if (!bResSet) {
 			UInt32 uiFullHeight = pSourceBuffer->GetHeight();
@@ -547,8 +576,8 @@ void CubemapRenderer::RenderSceenSpaceCubemap() {
 			rect2 = NiRect<UInt32>(0, uiCubeSize, 0, uiCubeSize);
 			bResSet = true;
 		}
-		spScreenCrop->SetRenderTargetGroup(NiRenderer::CLEAR_ALL);
 
+		spScreenCrop->SetRenderTargetGroup(NiRenderer::CLEAR_ALL);
 
 		// Perform the copy operation
 		Ni2DBuffer* pScreenCrop = spScreenCrop->GetTexture(0)->GetBuffer();
@@ -576,6 +605,24 @@ void CubemapRenderer::RenderSceenSpaceCubemap() {
 		BSShaderManager::SetEyeReflectionCubeMap(pSourceEyeCubeMap);
 
 		bInUse_Player = false;
+	}
+}
+
+void CubemapRenderer::SaveCubemapToFiles() {
+	if (bDumpNextFrame) {
+		NiDX9Renderer* pRenderer = NiDX9Renderer::GetSingleton();
+
+		D3DSURFACE_DESC desc;
+		for (UInt32 uiFace = 0; uiFace < 6; uiFace++) {
+			LPDIRECT3DSURFACE9 pNewSurf;
+			LPDIRECT3DSURFACE9 surf = reinterpret_cast<NiDX92DBufferData*>(spRenderedCubemapPlayer->GetFaceBuffer(uiFace)->m_spRendererData.m_pObject)->m_pkSurface;
+			surf->GetDesc(&desc);
+			pRenderer->GetD3DDevice()->CreateOffscreenPlainSurface(desc.Height, desc.Height, desc.Format, D3DPOOL_SYSTEMMEM, &pNewSurf, 0);
+			pRenderer->GetD3DDevice()->GetRenderTargetData(surf, pNewSurf);
+			D3DXSaveSurfaceToFile(std::format("face_{}.bmp", uiFace).c_str(), D3DXIFF_BMP, pNewSurf, 0, 0);
+			pNewSurf->Release();
+		}
+		bDumpNextFrame = false;
 	}
 }
 
