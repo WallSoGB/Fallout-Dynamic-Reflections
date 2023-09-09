@@ -135,7 +135,8 @@ void CubemapRenderer::InitHooks() {
 	ReplaceCall(0xE901D5, NiDX9RenderedCubeMapData::CreateSurf);
 	
 	// Replace ShadowLightShader pixel shader create func
-	ReplaceCall(0xB78907, BSShader::CreatePixelShader);
+	if(GetModuleHandle("NewVegasReloaded.dll") == nullptr)
+		ReplaceCall(0xB78907, BSShader::CreatePixelShader);
 }
 
 bool CubemapRenderer::SearchCamera(TESObjectCELL* apCell)
