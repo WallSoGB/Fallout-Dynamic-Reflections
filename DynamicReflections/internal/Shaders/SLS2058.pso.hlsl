@@ -74,7 +74,7 @@ VS_OUTPUT main(VS_INPUT IN) {
     vProcessedCubemap.rgb = (vCubemap.rgb * (lerp(vNormalMap.a, vEnvMask.x, EnvToggles.w) * EnvToggles.z)) * AmbientColor.rgba;
 
     OUT.vColor.a = 1;
-    OUT.vColor.rgb = ((EnvToggles.x <= 0.0 ? vProcessedCubemap.rgb : (vProcessedCubemap.rgb * IN.VertexColor.rgb)) * IN.texcoord_4.x);
+    OUT.vColor.rgb = ((EnvToggles.x <= 0.0 ? vProcessedCubemap.rgb : (vProcessedCubemap.rgb * IN.vVertexColor.rgb)) * IN.texcoord_4.x);
 
     return OUT;
 };
