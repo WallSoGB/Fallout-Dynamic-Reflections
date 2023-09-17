@@ -10,7 +10,7 @@ NiRTTIAddress(NiProperty, 0x11F4420);
 class NiProperty : public NiObjectNET {
 public:
 	NiProperty();
-	~NiProperty();
+	virtual ~NiProperty();
 
 	virtual UInt32	Type();
 	virtual void	Update(NiUpdateData* pUpdateData);

@@ -15,20 +15,20 @@ NiSmartPointer(BSShaderPPLightingProperty);
 class BSShaderPPLightingProperty : public BSShaderLightingProperty {
 public:
 	BSShaderPPLightingProperty();
-	~BSShaderPPLightingProperty();
+	virtual ~BSShaderPPLightingProperty();
 
 	virtual void							CopyTo3(Lighting30ShaderProperty* apTarget);
 	virtual void							CopyProperties(BSShaderProperty* apTarget);
-	virtual void							Unk_35(); // B69BE0
-	virtual void							Unk_36();
+	virtual void							Unk_52();
+	virtual void							Unk_53();
 	virtual void							PickClampMode(UInt32 auiMode);
 	virtual NiTexturingProperty::ClampMode	GetClampMode();
 	virtual void							SetClampMode(NiTexturingProperty::ClampMode aeClamp);
-	virtual UInt16							GetSlotCount();
-	virtual int								Unk_3B();
+	virtual UInt16							GetLandscapeTextureCount();
+	virtual int								GetLandPassCount();
 	virtual void							SetTexture(BSTextureSet::TextureSlots aeTextureSlot, UInt32 auiTextureNumber, NiTexture* apTexture);
 	virtual NiTexture*						GetTexture(BSTextureSet::TextureSlots aeTextureSlot, UInt32 auiTextureNumber);
-	virtual void							Unk_3E(); // B666D0
+	virtual void							Unk_61();
 	virtual void							SetDiffuseTexture(int, NiTexture* apTexture);
 	virtual void							SetNormalTexture(int, NiTexture* apTexture);
 	virtual void							SetGlowMask();

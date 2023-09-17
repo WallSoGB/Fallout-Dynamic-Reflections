@@ -12,7 +12,7 @@ const UInt32 kNiObjectNET_GetExtraData = 0x006FF9C0;
 class NiObjectNET : public NiObject {
 public:
 	NiObjectNET();
-	~NiObjectNET();
+	virtual ~NiObjectNET();
 
 	enum CopyType
 	{
@@ -30,12 +30,7 @@ public:
 	const char* GetName() const { return m_kName.m_kHandle; };
 	void SetName(const char* newName) { m_kName = newName; };
 
-	NiTimeController* GetController(const NiRTTI* apRTTI);
-
-#if RUNTIME
-	MEMBER_FN_PREFIX(NiObjectNET);
-	DEFINE_MEMBER_FN(GetExtraData, NiExtraData*, kNiObjectNET_GetExtraData, const char* name);
-#endif
+	NiExtraData* GetExtraData(const NiFixedString& kKey);
 };
 
 ASSERT_SIZE(NiObjectNET, 0x18);

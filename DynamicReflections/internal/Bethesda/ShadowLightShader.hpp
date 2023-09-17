@@ -73,32 +73,13 @@ public:
 		kPX_STBBColorConstants = 21,
 	};
 
-	static void UpdateBoundCenter(NiGeometry* pkGeometry);
-	static void SetLodTextureParams(BSShaderPPLightingProperty* pkShaderProperty);
-
-	static void __fastcall UpdateAmbientColor(ShadowLightShader* apThis, void*, BSShaderPPLightingProperty* pShaderProperty, BSRenderPass* pRenderPass, NiGeometry* pGeometry, NiMaterialProperty* pMaterialProperty);
-
-	static void SetCustomConstant(UInt32 index, float x, float y, float z, float r);
-
-	static __forceinline void SetCameraWorldTranslate(float afX, float afY, float afZ, float afW) {
-		NiPoint4* pPos = &*(NiPoint4*)0x11FA2A0;
-		pPos->x = afX;
-		pPos->y = afY;
-		pPos->z = afZ;
-		pPos->r = afW;
-		
-	};
-
-	static void __fastcall UpdateConstants(ShadowLightShader* apThis, void*, NiPropertyState* apProperties);
-	static void __fastcall UpdateToggles(ShadowLightShader* apThis, void*, RenderPassTypes aeRenderPassType, NiGeometry* apGeo, BSShaderPPLightingProperty* apShaderProp, NiMaterialProperty* apMatProp, BSRenderPass* apRenderPass, NiAlphaProperty* apAlphaProp);
-	static void __fastcall SetEmittanceColorForGlowMapMeshes(ShadowLightShader* apThis, void*, NiMaterialProperty* apMatProp);
-	static void __fastcall SetAmbientColorForNonGlowMapMeshes(ShadowLightShader* apThis, void*, NiMaterialProperty* apMatProp);
+	void SetDiffuseMap(BSShaderPPLightingProperty* apShaderProp, UInt32 auiStageNumber, UInt32 auiTextureNumber);
 };
 ASSERT_SIZE(ShadowLightShader, 0x8C)
 
 // Custom
 class ShadowLightShaderManager {
-protected:
+public:
 	struct FogProperties
 	{
 		struct FogParameters
@@ -121,7 +102,6 @@ protected:
 		float fAlphaTestRef;
 	};
 
-public:
 	struct VertexConstants {
 		// WorldViewProjTranspose 0
 		// SkinWorldViewProjTranspose 1

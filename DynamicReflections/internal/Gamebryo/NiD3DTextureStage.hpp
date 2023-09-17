@@ -8,21 +8,23 @@ class NiGlobalConstantEntry;
 
 class NiD3DTextureStage {
 public:
-	NiTexturingProperty::FilterMode m_eFilter;
-	UInt32 m_uiStage;
-	NiTexture* m_pkTexture;
-	UInt32 m_uiTextureFlags;
-	NiD3DTextureStageGroup* m_pkTextureStageGroup;
-	UInt32 m_uiTextureTransformFlags;
-	NiGlobalConstantEntry* m_pkGlobalEntry;
-	D3DMATRIX m_kTextureTransformation;
-	UInt16 m_usObjTextureFlags;
-	bool m_bTextureTransform;
-	bool m_bRendererOwned;
-	UInt32 m_uiRefCount;
-	bool bUnk64;
-	bool bUnk65;
-	bool bUnk66;
+	NiTexturingProperty::FilterMode		m_eFilter;
+	UInt32								m_uiStage;
+	NiTexture*							m_pkTexture;
+	UInt32								m_uiTextureFlags;
+	NiD3DTextureStageGroup*				m_pkTextureStageGroup;
+	UInt32								m_uiTextureTransformFlags;
+	NiGlobalConstantEntry*				m_pkGlobalEntry;
+	D3DMATRIX							m_kTextureTransformation;
+	UInt16								m_usObjTextureFlags;
+	bool								m_bTextureTransform;
+	bool								m_bRendererOwned;
+	UInt32								m_uiRefCount;
+	bool								bUnk64;
+	bool								bUnk65;
+	bool								bUnk66;
+
+	void SetClampMode(NiTexturingProperty::ClampMode eClamp);
 };
 
 ASSERT_SIZE(NiD3DTextureStage, 0x68);

@@ -17,23 +17,53 @@ IDebugLog	   gLog("logs\\DynamicReflections.log");
 
 static LPSTR g_CurrentDir;
 
-void MessageHandler(NVSEMessagingInterface::Message* msg)
-{
-	if (msg->type == NVSEMessagingInterface::kMessage_DeferredInit) {
+void MessageHandler(NVSEMessagingInterface::Message* msg) {
+	switch (msg->type) {
+	case NVSEMessagingInterface::kMessage_DeferredInit:
 		CubemapRenderer::pSourceEyeCubeMap = *(NiSourceTexture**)0x11F9544;
+		break;
+	case NVSEMessagingInterface::kMessage_PreLoadGame:
+		CubemapRenderer::bRefreshCell = true;
+		break;
+	default:
+		break;
 	}
 }
 
-bool NVSEPlugin_Query(const NVSEInterface* nvse, PluginInfo* info)
-{
+bool NVSEPlugin_Query(const NVSEInterface* nvse, PluginInfo* info) {
 	info->infoVersion = PluginInfo::kInfoVersion;
 	info->name = "Dynamic Reflections";
-	info->version = 120;
+	info->version = 130;
 
 	return true;
 }
 
+#define RegisterScriptCommand(name) 	nvse->RegisterCommand(&kCommandInfo_ ##name)
+#define REG_CMD(name) RegisterScriptCommand(name)
+
+bool Cmd_CubemapRefreshCell_Execute(COMMAND_ARGS) {
+	*result = true;
+	CubemapRenderer::bRefreshCell = true;
+	return true;
+}
+
+bool Cmd_CubemapSaveToFile_Execute(COMMAND_ARGS) {
+	*result = true;
+	CubemapRenderer::bDumpToFile = true;
+	return true;
+}
+
+DEFINE_COMMAND_PLUGIN(CubemapSaveToFile, "Saves player's cubemap as BMP files in the root folder", false, NULL)
+DEFINE_COMMAND_PLUGIN(CubemapRefreshCell, "Forcibly scans the current cell for new cubemap cameras", false, NULL)
+
 bool NVSEPlugin_Load(NVSEInterface* nvse) {
+
+	UInt32 const uiOpCodeBase = 0x3F00;
+
+	nvse->SetOpcodeBase(uiOpCodeBase);
+
+	REG_CMD(CubemapRefreshCell);
+
 	if (!nvse->isEditor) {
 		CSimpleIniA ini;
 		ini.SetUnicode();
@@ -85,8 +115,6 @@ bool NVSEPlugin_Load(NVSEInterface* nvse) {
 			CubemapRenderer::fWorldViewDistance = ini.GetDoubleValue("World", "fWorldViewDistance", 200000.0);
 			CubemapRenderer::bNoWorldInInteriors = ini.GetBoolValue("World", "bNoWorldInInteriors", 0);
 			CubemapRenderer::bNoWorldInExteriors = ini.GetBoolValue("World", "bNoWorldInExteriors", 0);
-
-
 
 
 			CubemapRenderer::InitHooks();

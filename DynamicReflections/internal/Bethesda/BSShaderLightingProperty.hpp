@@ -8,10 +8,14 @@ NiSmartPointer(BSShaderLightingProperty);
 class BSShaderLightingProperty : public BSShaderProperty {
 public:
 	BSShaderLightingProperty();
-	~BSShaderLightingProperty();
+	virtual ~BSShaderLightingProperty();
 
 	virtual void CopyTo2();
 	virtual void Unk_31();
+
+	enum ExtraFlags {
+		EF_IsPlayer = 0x1,
+	};
 
 	NiTListBase<ShadowSceneLight*>		lLightList;
 	float								fUnk06C;

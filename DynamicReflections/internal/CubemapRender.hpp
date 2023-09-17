@@ -48,6 +48,12 @@ public:
 	static bool bNoWorldInExteriors;
 	static bool bUseAmbient;
 
+
+	// Script toggles
+	static bool bRefreshCell;
+	static bool bDumpToFile;
+
+
 	static UInt32 uiPlayerCubemapSize;
 	static UInt32 uiWorldCubemapSize;
 	static UInt32 uiPlayerUpdateRate;
@@ -86,7 +92,7 @@ public:
 
 	static void SaveCubemapToFiles();
 
-	static const NiTexture* __fastcall SLS_GetCubeMap_Hook(ShadowLightShader* apThis, void*, BSShaderPPLightingProperty* apShaderProp, UInt32 auiTextureNumber);
+	static void __fastcall SLS_SetCubeMap_Hook(ShadowLightShader* apThis, void*, BSShaderPPLightingProperty* apShaderProp, UInt32 auiTexturePass, UInt32 auiTextureNumber);
 	static void __fastcall Shader30_SetCubeMap_Hook(void* apThis, void*, NiD3DPass* apPass, BSShaderPPLightingProperty* apShaderProp, RenderPassTypes aeRenderPass);
 	static void* __fastcall Render_Hook(void* apThis);
 	static void __fastcall SetOffScreenRTGroup_Hook(TESMain* apThis, void*, BSRenderedTexture* pTexture, BOOL bIsMSAA, UInt32 uiClearMode);

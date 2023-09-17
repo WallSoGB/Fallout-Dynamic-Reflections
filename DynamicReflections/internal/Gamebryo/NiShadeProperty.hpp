@@ -7,7 +7,7 @@ NiSmartPointer(NiShadeProperty);
 class NiShadeProperty : public NiProperty {
 public:
 	NiShadeProperty();
-	~NiShadeProperty();
+	virtual ~NiShadeProperty();
 
 	enum ShaderType : UInt32
 	{

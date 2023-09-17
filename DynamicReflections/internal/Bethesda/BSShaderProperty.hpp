@@ -73,7 +73,7 @@ enum Flags {
 class BSShaderProperty : public NiShadeProperty {
 public:
 	BSShaderProperty();
-	~BSShaderProperty();
+	virtual ~BSShaderProperty();
 
 	enum BSShaderFlags {
 		Specular = 0x1,
@@ -156,7 +156,7 @@ public:
 	virtual UInt16				GetNumberofPasses(NiGeometry* apGeometry);
 	virtual RenderPassList*		GetRenderPassList4C();
 	virtual BSRenderPass*		SetDepthPass(NiGeometry* apGeometry);
-	virtual void				Unk_2A(NiGeometry* pGeometry, void*, void*);
+	virtual BSShaderProperty*	Unk_2A(NiGeometry* pGeometry, UInt32 unk0 = 0, UInt32 unk2 = 0);
 	virtual NiSourceTexture*	GetDiffuseTexture();
 	virtual RenderPassList*		WaterDepth(NiGeometry* pGeometry);
 	virtual void				Unk_2D();

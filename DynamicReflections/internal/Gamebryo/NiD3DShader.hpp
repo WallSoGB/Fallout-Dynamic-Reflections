@@ -24,10 +24,7 @@ public:
 
 	static NiD3DPass* m_kPass;
 
-	void SetBlendAlpha(NiPropertyState* apPropertyState);
 	static NiD3DPass* GetCurrentPass();
-	static void SetCurrentPass(NiD3DPass* apPass);
-	static void __fastcall SetBlendAlpha_Hook(NiD3DShader* apThis, void*, NiPropertyState* apPropertyState);
 };
 
 ASSERT_SIZE(NiD3DShader, 0x3C);

@@ -22,6 +22,8 @@ class NiTriBasedGeom;
 class NiTriShape;
 class NiTriStrips;
 class NiBound;
+class NiObjectGroup;
+class NiControllerManager;
 
 NiSmartPointer(NiObject);
 NiRTTIAddress(NiObject, 0x11F4418);
@@ -29,9 +31,9 @@ NiRTTIAddress(NiObject, 0x11F4418);
 class NiObject : public NiRefObject {
 public:
 	NiObject();
-	~NiObject();
+	virtual ~NiObject();
 
-	virtual const NiRTTI*				GetRTTI();
+	virtual const NiRTTI*				GetRTTI() const;
 	virtual NiNode*						IsNiNode();
 	virtual BSFadeNode*					IsFadeNode();
 	virtual BSMultiBoundNode*			IsMultiBoundNode();
@@ -53,17 +55,17 @@ public:
 	virtual void						RegisterStreamables(NiStream* kStream);
 	virtual void						SaveBinary(NiStream* kStream);
 	virtual bool						IsEqual(NiObject* pkObject);
-	virtual void						GetViewerStrings(NiTArray<char*>* pkStrings);
-	virtual void						AddViewerStrings(NiTArray<char*>* pkStrings);
+	virtual void						GetViewerStrings(NiTArray<const char*>* pkStrings);
+	virtual void						AddViewerStrings(NiTArray<const char*>* pkStrings);
 	virtual void						ProcessClone(NiCloningProcess* kCloning);
 	virtual void						PostLinkObject(NiStream* kStream);
 	virtual bool						StreamCanSkip();
 	virtual const NiRTTI*				GetStreamableRTTI();
 	virtual void						SetBound(NiBound* pNewBound);
 	virtual void						GetBlockAllocationSize();
-	virtual UInt32*						GetGroup();
-	virtual void						SetGroup(void* pkGroup);
-	virtual void						Unk_36();
+	virtual NiObjectGroup				GetGroup();
+	virtual void						SetGroup(NiObjectGroup* pkGroup);
+	virtual NiControllerManager*		IsControllerManager();
 
 	NiObject* Clone() { return ThisStdCall<NiObject*>(0xA5D680, this); }
 

@@ -186,6 +186,7 @@ copy "$(TargetDir)$(TargetName).pdb" "C:\Symbols\$(TargetName).pdb"</Command>
     <ClCompile Include="internal\Bethesda\MTRenderingSystem.cpp" />
     <ClCompile Include="internal\Bethesda\PlayerCharacter.cpp" />
     <ClCompile Include="internal\Bethesda\ScrapHeap.cpp" />
+    <ClCompile Include="internal\Bethesda\ShadowLightShader.cpp" />
     <ClCompile Include="internal\Bethesda\TES.cpp" />
     <ClCompile Include="internal\Bethesda\TESMain.cpp" />
     <ClCompile Include="internal\Bethesda\TESObjectCELL.cpp" />
@@ -196,6 +197,8 @@ copy "$(TargetDir)$(TargetName).pdb" "C:\Symbols\$(TargetName).pdb"</Command>
     <ClCompile Include="internal\Gamebryo\NiBound.cpp" />
     <ClCompile Include="internal\Gamebryo\NiCullingProcess.cpp" />
     <ClCompile Include="internal\Gamebryo\NiD3DPixelShader.cpp" />
+    <ClCompile Include="internal\Gamebryo\NiD3DShader.cpp" />
+    <ClCompile Include="internal\Gamebryo\NiD3DTextureStage.cpp" />
     <ClCompile Include="internal\Gamebryo\NiDX9RenderedCubeMapData.cpp" />
     <ClCompile Include="internal\Gamebryo\NiDX9Renderer.cpp" />
     <ClCompile Include="internal\Gamebryo\NiFixedString.cpp" />
@@ -203,6 +206,7 @@ copy "$(TargetDir)$(TargetName).pdb" "C:\Symbols\$(TargetName).pdb"</Command>
     <ClCompile Include="internal\Gamebryo\NiGlobalStringTable.cpp" />
     <ClCompile Include="internal\Gamebryo\NiMemory.cpp" />
     <ClCompile Include="internal\Gamebryo\NiNode.cpp" />
+    <ClCompile Include="internal\Gamebryo\NiObjectNET.cpp" />
     <ClCompile Include="internal\Gamebryo\NiRenderer.cpp" />
     <ClCompile Include="internal\Gamebryo\NiRenderTargetGroup.cpp" />
     <ClCompile Include="internal\Gamebryo\NiTriBasedGeom.cpp" />

@@ -8,9 +8,8 @@ NiSmartPointer(NiRefObject);
 class NiRefObject : public NiMemObject {
 public:
 	NiRefObject();
-	~NiRefObject();
 
-	virtual void Destroy(bool bFreeThis);
+	virtual		 ~NiRefObject();
 	virtual void DeleteThis();
 
 	UInt32 m_uiRefCount;
