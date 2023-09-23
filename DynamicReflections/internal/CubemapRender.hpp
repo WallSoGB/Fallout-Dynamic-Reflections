@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ShadowLightShader.hpp"
+#include "Lighting30Shader.hpp"
 #include "NiRefObject.hpp"
 #include "NiProperty.hpp"
 #include "TES.hpp"
@@ -54,8 +55,8 @@ public:
 	static bool bDumpToFile;
 
 
-	static UInt32 uiPlayerCubemapSize;
-	static UInt32 uiWorldCubemapSize;
+	static UInt32 uiCubemapSize;
+
 	static UInt32 uiPlayerUpdateRate;
 	static UInt32 uiWorldUpdateRate;
 
@@ -93,9 +94,10 @@ public:
 	static void SaveCubemapToFiles();
 
 	static void __fastcall SLS_SetCubeMap_Hook(ShadowLightShader* apThis, void*, BSShaderPPLightingProperty* apShaderProp, UInt32 auiTexturePass, UInt32 auiTextureNumber);
-	static void __fastcall Shader30_SetCubeMap_Hook(void* apThis, void*, NiD3DPass* apPass, BSShaderPPLightingProperty* apShaderProp, RenderPassTypes aeRenderPass);
+	static void __fastcall Shader30_SetCubeMap_Hook(Lighting30Shader* apThis, void*, NiD3DPass* apPass, BSShaderPPLightingProperty* apShaderProp, RenderPassTypes aeRenderPass);
 	static void* __fastcall Render_Hook(void* apThis);
 	static void __fastcall SetOffScreenRTGroup_Hook(TESMain* apThis, void*, BSRenderedTexture* pTexture, BOOL bIsMSAA, UInt32 uiClearMode);
-	static void __fastcall UpdateToggles_Hook(ShadowLightShader* apThis, void*, RenderPassTypes aeRenderPassType, NiGeometry* apGeo, BSShaderPPLightingProperty* apShaderProp, NiMaterialProperty* apMatProp, BSRenderPass* apRenderPass, NiAlphaProperty* apAlphaProp);
+	static void __fastcall SLS_UpdateToggles_Hook(ShadowLightShader* apThis, void*, RenderPassTypes aeRenderPassType, NiGeometry* apGeo, BSShaderPPLightingProperty* apShaderProp, NiMaterialProperty* apMatProp, BSRenderPass* apRenderPass, NiAlphaProperty* apAlphaProp);
+	static void __fastcall Shader30_UpdateToggles_Hook(Lighting30Shader* apThis, void*, BSShaderPPLightingProperty* apShaderProp);
 	static void __fastcall BSShaderProperty_LoadBinary_Hook(BSShaderProperty* apThis, void*, DWORD* kStream);
 };

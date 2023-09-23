@@ -44,7 +44,7 @@ VS_OUTPUT main(VS_INPUT IN) {
     vEnvMask.rgba = tex2D(CustomEnvMask, IN.NormalUV.xy);
 
     q1.xyz = normalize(normalize(expand(vNormalMap.rgb)) * const_0.yyz);
-    r2.xyz = normalize(float3(IN.texcoord_1.w, IN.texcoord_2.w, IN.texcoord_3.w));
+    r2.xyz = normalize(-(float3(IN.texcoord_1.w, IN.texcoord_2.w, IN.texcoord_3.w)));
     vCubemap.z = dot(q1.xyz, normalize(IN.texcoord_3.xyz));
     vCubemap.y = dot(q1.xyz, normalize(IN.texcoord_2.xyz));
     vCubemap.x = dot(q1.xyz, normalize(IN.texcoord_1.xyz));
@@ -60,10 +60,13 @@ VS_OUTPUT main(VS_INPUT IN) {
 
     vCubemap.xyzw = texCUBElod(EnvironmentCubeMap, cubeCoord);
 
-    q5.xyz = ((vCubemap.xyz * (lerp(vNormalMap.a, vEnvMask.x, abs(EnvToggles.w)) * EnvToggles.z)) * MatAlpha.x) * IN.color_0.rgb;
+    // EnvToggles.w is 1 if mask is present
+    // EnvToggles.z is env map scale
+    // MatAlpha.a is fade
+    q5.rgb = ((vCubemap.rgb * (lerp(vNormalMap.a, vEnvMask.x, abs(EnvToggles.w)) * EnvToggles.z)) * MatAlpha.x) * IN.color_0.rgb;
 
     OUT.vColor.a = 1;
-    OUT.vColor.rgb = q5.xyz * IN.texcoord_4.x;
+    OUT.vColor.rgb = q5.rgb * IN.texcoord_4.x;
 
     return OUT;
 };

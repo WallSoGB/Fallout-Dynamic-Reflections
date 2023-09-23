@@ -106,8 +106,8 @@
     </Link>
     <PostBuildEvent>
       <Message>Installing DLL...</Message>
-      <Command>copy "$(TargetPath)" "C:\Games\Modding\TTW\mods\DynamicReflections\nvse\plugins\$(TargetFileName)"
-copy "$(TargetDir)$(TargetName).pdb" "C:\Games\Modding\TTW\mods\DynamicReflections\nvse\plugins\$(TargetName).pdb"
+      <Command>copy "$(TargetPath)" "$(MO2)\mods\Real Time Reflections\nvse\plugins\$(TargetFileName)"
+copy "$(TargetDir)$(TargetName).pdb" "$(MO2)\mods\Real Time Reflections\nvse\plugins\$(TargetName).pdb"
 copy "$(TargetDir)$(TargetName).pdb" "C:\Symbols\$(TargetName).pdb"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>

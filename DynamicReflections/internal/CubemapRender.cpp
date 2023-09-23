@@ -24,16 +24,18 @@ NiTexture* CubemapRenderer::pSourceEyeCubeMap = nullptr;;
 BSCubeMapCameraPtr CubemapRenderer::spPlayerCubeCam = nullptr;
 BSCubeMapCameraPtr CubemapRenderer::spWorldCubeCam = nullptr;
 
-UInt32 CubemapRenderer::uiPlayerCubemapSize;
-UInt32 CubemapRenderer::uiWorldCubemapSize;
 UInt32 CubemapRenderer::uiPlayerUpdateRate;
 UInt32 CubemapRenderer::uiWorldUpdateRate;
+
+UInt32 CubemapRenderer::uiCubemapSize = 512;
 UInt32 CubemapRenderer::uiScreenSpaceCubemapSize;
 UInt32 CubemapRenderer::uiScreenSpaceBlurRadius;
+
 float CubemapRenderer::fPlayerViewDistance;
 float CubemapRenderer::fWorldViewDistance;
 float CubemapRenderer::fInteriorBrightnessMult;
 float CubemapRenderer::fExteriorBrightnessMult;
+
 bool CubemapRenderer::bScreenSpaceInterior;
 bool CubemapRenderer::bNoWorldInInteriors;
 bool CubemapRenderer::bNoWorldInExteriors;
@@ -45,9 +47,7 @@ bool CubemapRenderer::bHighQuality;
 bool CubemapRenderer::bLowQuality;
 bool CubemapRenderer::bRenderObjectLOD;
 bool CubemapRenderer::bRenderLandLOD;
-
 bool CubemapRenderer::bRendering = false;
-
 bool CubemapRenderer::bRefreshCell = false;
 bool CubemapRenderer::bDumpToFile = false;
 
@@ -55,8 +55,8 @@ static NiTPointerListBase<NiAVObject*> kSceneNodes;
 
 static bool bInUse_Player = false;
 static bool bInUse_World = false;
-static NiNode* pWeaponNode = nullptr;
-static NiNode* pCameraNode = nullptr;
+static NiNodePtr spWeaponNode = nullptr;
+static NiNodePtr spCameraNode = nullptr;
 static TESObjectCELL* pLastCell = nullptr;
 
 #define bDebugLog false
@@ -102,12 +102,6 @@ void SetCubemapFlag(NiNode* pObject) {
 }
 
 void CubemapRenderer::InitHooks() {
-	if (uiPlayerCubemapSize % 2 != 0)
-		uiPlayerCubemapSize = 256;
-
-	if (uiWorldCubemapSize % 2 != 0)
-		uiWorldCubemapSize = 256;
-
 	uiPlayerUpdateRate = max(0, min(uiPlayerUpdateRate, 6));
 	uiWorldUpdateRate = max(0, min(uiWorldUpdateRate, 6));
 
@@ -122,7 +116,8 @@ void CubemapRenderer::InitHooks() {
 	if (CubemapRenderer::bOverride)
 		ReplaceCall(0xB68DCC, BSShaderProperty_LoadBinary_Hook);
 
-	ReplaceCall(0xB7DC5B, UpdateToggles_Hook);
+	ReplaceCall(0xB7DC5B, SLS_UpdateToggles_Hook);
+	ReplaceCall(0xBBF166, Shader30_UpdateToggles_Hook);
 	
 	// Fix water flow speed
 	// Water surface updates every time its renderd, and we don't want water to run 6x its speed if cubemaps are active
@@ -139,16 +134,20 @@ void CubemapRenderer::InitHooks() {
 	
 	// Replace ShadowLightShader pixel shader create func
 	// In case NVR is used, we use its own shader loader
-	if(GetModuleHandle("NewVegasReloaded.dll") == nullptr)
+	if (GetModuleHandle("NewVegasReloaded.dll") == nullptr) {
 		ReplaceCall(0xB78907, BSShader::CreatePixelShader);
+
+		// 30Shader
+		ReplaceCall(0xBBB5A5, BSShader::CreatePixelShader);
+	}
 }
 
 bool CubemapRenderer::SearchCamera(TESObjectCELL* apCell)
 {
 	NiNode* pStaticsNode = apCell->GetChildNode(TESObjectCELL::CN_STATIC);
-	pCameraNode = static_cast<NiNode*>(pStaticsNode->GetObjectByNameEx("CellCamera"));
+	spCameraNode = static_cast<NiNode*>(pStaticsNode->GetObjectByNameEx("CellCamera"));
 
-	if (pCameraNode) {
+	if (spCameraNode.m_pObject) {
 #if bDebugLog
 		_MESSAGE("[ CubemapRenderer::RenderCubemap ] CellCamera found");
 #endif
@@ -158,8 +157,8 @@ bool CubemapRenderer::SearchCamera(TESObjectCELL* apCell)
 	for (UInt32 i = 0; i < TESObjectCELL::CN_MAX; i++) {
 		NiNode* pCellNode = apCell->GetChildNode(static_cast<TESObjectCELL::CELLNODE>(i));
 		if (pCellNode) {
-			pCameraNode = static_cast<NiNode*>(pCellNode->GetObjectByNameEx("CellCamera"));
-			if (pCameraNode) {
+			spCameraNode = static_cast<NiNode*>(pCellNode->GetObjectByNameEx("CellCamera"));
+			if (spCameraNode.m_pObject) {
 #if bDebugLog
 				_MESSAGE("[ CubemapRenderer::RenderCubemap ] CellCamera found");
 #endif
@@ -170,7 +169,7 @@ bool CubemapRenderer::SearchCamera(TESObjectCELL* apCell)
 #if bDebugLog
 			_MESSAGE("[ CubemapRenderer::RenderCubemap ] CellCamera not found");
 #endif
-			pCameraNode = nullptr;
+			spCameraNode = nullptr;
 		}
 	}
 
@@ -298,8 +297,8 @@ bool CubemapRenderer::CanRenderInteriorCubemap() {
 
 BSCubeMapCamera* CubemapRenderer::GetPlayerCamera() {
 	if (!spPlayerCubeCam.m_pObject) {
-		_MESSAGE("[ CubemapRenderer::RenderCubemap ] Creating player cubemap camera");
-		spPlayerCubeCam = BSCubeMapCamera::Create(TESMain::GetWorldRoot(), fPlayerViewDistance, uiPlayerCubemapSize, D3DFMT_A16B16G16R16F);
+		_MESSAGE("[ CubemapRenderer::RenderCubemap ] Creating player cubemap camera. View distance: %f", fPlayerViewDistance);
+		spPlayerCubeCam = BSCubeMapCamera::Create(TESMain::GetWorldRoot(), fPlayerViewDistance, uiCubemapSize, D3DFMT_A16B16G16R16F);
 		spPlayerCubeCam->SetName("Player Reflections");
 	}
 	return spPlayerCubeCam;
@@ -307,8 +306,8 @@ BSCubeMapCamera* CubemapRenderer::GetPlayerCamera() {
 
 BSCubeMapCamera* CubemapRenderer::GetWorldCamera() {
 	if (!spWorldCubeCam.m_pObject) {
-		_MESSAGE("[ CubemapRenderer::RenderCubemap ] Creating world cubemap camera");
-		spWorldCubeCam = BSCubeMapCamera::Create(nullptr, fWorldViewDistance, uiWorldCubemapSize, D3DFMT_A16B16G16R16F);
+		_MESSAGE("[ CubemapRenderer::RenderCubemap ] Creating world cubemap camera. View distance: %f", fWorldViewDistance);
+		spWorldCubeCam = BSCubeMapCamera::Create(nullptr, fWorldViewDistance, uiCubemapSize, D3DFMT_A16B16G16R16F);
 		spWorldCubeCam->SetName("World Reflections");
 	}
 	return spWorldCubeCam;
@@ -325,7 +324,7 @@ BSRenderedTexture* CubemapRenderer::GetPlayerTexture() {
 	_MESSAGE("[ CubemapRenderer::RenderCubemap ] Creating player cubemap texture");
 #endif
 
-	spPlayerCubeCam->spTexture = BSTextureManager::NewRenderedCubemap(uiPlayerCubemapSize, 0, D3DFMT_A16B16G16R16F, 0);
+	spPlayerCubeCam->spTexture = BSTextureManager::NewRenderedCubemap(uiCubemapSize, 0, D3DFMT_A16B16G16R16F, 0);
 	return spPlayerCubeCam->spTexture.m_pObject;
 }
 
@@ -340,7 +339,7 @@ BSRenderedTexture* CubemapRenderer::GetWorldTexture() {
 	_MESSAGE("[ CubemapRenderer::RenderCubemap ] Creating world cubemap texture");
 #endif
 
-	spWorldCubeCam->spTexture = BSTextureManager::NewRenderedCubemap(uiWorldCubemapSize, 0, D3DFMT_A16B16G16R16F, 0);
+	spWorldCubeCam->spTexture = BSTextureManager::NewRenderedCubemap(uiCubemapSize, 0, D3DFMT_A16B16G16R16F, 0);
 	return spWorldCubeCam->spTexture;
 }
 
@@ -376,10 +375,18 @@ void CubemapRenderer::RenderCubemap() {
 	bool bCellChanged = false;
 	bThirdPerson = pPlayer->IsThirdPerson();
 
+	// Remove cell camera if it has only one refence (us)
+	// Normally it should have at least 2 references - one from the cell and one from us
+	// This is to handle cases like Update3D where the model is being reloaded
+	if (spCameraNode.m_pObject && spCameraNode->m_uiRefCount == 1) {
+		spCameraNode = nullptr;
+		bRefreshCell = true;
+	}
+
 	if ((!pLastCell || pLastCell != pCurrCell || bCheckCellAgain || bRefreshCell) && pCurrCell) {
 		bCellChanged = true;
 		pLastCell = pCurrCell;
-		pCameraNode = nullptr;
+		spCameraNode = nullptr;
 		spRenderedCubemapWorld = nullptr;
 		bCheckCellAgain = false;
 		bRefreshCell = false;
@@ -400,7 +407,7 @@ void CubemapRenderer::RenderCubemap() {
 		}
 	}
 
-	bool bUseCellCamera = bInUse_World && pCameraNode;
+	bool bUseCellCamera = bInUse_World && spCameraNode.m_pObject;
 	SkipMode eShouldSkip = SKIP_NONE;
 
 	if (CanRenderInteriorCubemap())
@@ -450,10 +457,13 @@ void CubemapRenderer::RenderCubemap() {
 			BSCubeMapCamera* pPlayerCubeCam = GetPlayerCamera();
 			BSRenderedTexture* pPlayerTexture = GetPlayerTexture();
 
-			if (!pWeaponNode)
-				pWeaponNode = static_cast<NiNode*>(pPlayerNode1->GetObjectByNameEx("Weapon"));
+			if (spWeaponNode.m_pObject && spWeaponNode->m_uiRefCount < 2)
+				spWeaponNode = nullptr;
 
-			NiPoint3 weaponPos = pWeaponNode->GetWorldTranslate();
+			if (!spWeaponNode.m_pObject)
+				spWeaponNode = static_cast<NiNode*>(pPlayerNode1->GetObjectByNameEx("Weapon"));
+
+			NiPoint3 weaponPos = spWeaponNode->GetWorldTranslate();
 			if (pPlayer->IsWeaponOut() && !*BSShaderManager::bIsInInterior && !bHighQuality)
 				pPlayerCubeCam->SetLocalTranslate(bThirdPerson ? &playerPos : &weaponPos);
 			else
@@ -496,13 +506,13 @@ void CubemapRenderer::RenderCubemap() {
 			BSCubeMapCamera* pWorldCubeCam = GetWorldCamera();
 			BSRenderedTexture* pWorldTexture = GetWorldTexture();
 
-			if (pCameraNode) {
-				pWorldCubeCam->SetLocalTranslate(pCameraNode->GetWorldTranslate());
+			if (spCameraNode.m_pObject) {
+				pWorldCubeCam->SetLocalTranslate(spCameraNode->GetWorldTranslate());
 			}
 
 			kSceneNodes.RemoveAll();
 
-			if (!pCameraNode) {
+			if (!spCameraNode.m_pObject) {
 				// Adjust camera position to use eye height
 				playerPos.z += fPlayerEyeHeightOffset;
 				pWorldCubeCam->SetLocalTranslate(playerPos);
@@ -511,11 +521,11 @@ void CubemapRenderer::RenderCubemap() {
 			BGSTerrainManager* pTerrainManager = TES::GetWorldSpace()->GetTerrainManager();
 
 			// Add nodes to the list to be rendered
-			if (pCameraNode) {
+			if (spCameraNode.m_pObject) {
 				kSceneNodes.AddHead(pSceneGraph);
 
 				// Temporarily move sky to the camera position - it's normally set to player's
-				pSkyRoot->SetLocalTranslate(pCameraNode->GetWorldTranslate());
+				pSkyRoot->SetLocalTranslate(spCameraNode->GetWorldTranslate());
 				pSkyRoot->Update(g_defaultUpdateData);
 
 				if (!bThirdPerson) {
@@ -684,7 +694,7 @@ void CubemapRenderer::SaveCubemapToFiles() {
 
 // 0xB7C290
 void __fastcall CubemapRenderer::SLS_SetCubeMap_Hook(ShadowLightShader* apThis, void*, BSShaderPPLightingProperty* apShaderProp, UInt32 auiTexturePass, UInt32 auiTextureNumber) {
-	apThis->SetDiffuseMap(apShaderProp, 2, 0);
+	//apThis->SetDiffuseMap(apShaderProp, 2, 0);
 	
 	NiD3DTextureStage* pTexStage = NiD3DShader::GetCurrentPass()->GetStage(1);
 
@@ -712,7 +722,7 @@ void __fastcall CubemapRenderer::SLS_SetCubeMap_Hook(ShadowLightShader* apThis, 
 }
 
 // 0xC0BC00
-void __fastcall CubemapRenderer::Shader30_SetCubeMap_Hook(void* apThis, void*, NiD3DPass* apPass, BSShaderPPLightingProperty* apShaderProp, RenderPassTypes aeRenderPass) {
+void __fastcall CubemapRenderer::Shader30_SetCubeMap_Hook(Lighting30Shader* apThis, void*, NiD3DPass* apPass, BSShaderPPLightingProperty* apShaderProp, RenderPassTypes aeRenderPass) {
 	NiTexture* pTexture = nullptr;
 
 	if ((apShaderProp->ulFlags[1] & BSShaderProperty::Wall_RealTimeEnv || bOverride) && !bRendering) {
@@ -755,33 +765,44 @@ void __fastcall CubemapRenderer::SetOffScreenRTGroup_Hook(TESMain* apThis, void*
 	apThis->SetOffScreenRTGroup(pTexture, uiClearMode);
 }
 
-void __fastcall CubemapRenderer::UpdateToggles_Hook(ShadowLightShader* apThis, void*, RenderPassTypes aeRenderPassType, NiGeometry* apGeo, BSShaderPPLightingProperty* apShaderProp, NiMaterialProperty* apMatProp, BSRenderPass* apRenderPass, NiAlphaProperty* apAlphaProp) {
+void __fastcall CubemapRenderer::SLS_UpdateToggles_Hook(ShadowLightShader* apThis, void*, RenderPassTypes aeRenderPassType, NiGeometry* apGeo, BSShaderPPLightingProperty* apShaderProp, NiMaterialProperty* apMatProp, BSRenderPass* apRenderPass, NiAlphaProperty* apAlphaProp) {
 	ThisStdCall(0xB795B0, apThis, aeRenderPassType, apGeo, apShaderProp, apMatProp, apRenderPass, apAlphaProp);
 	
 	// These checks are pretty much come from the original function. I hate repeating them, but oh well.
 	if (!(aeRenderPassType >= BSSM_2x_ENVMAP && aeRenderPassType <= BSSM_2x_ENVMAP_EYE && (aeRenderPassType - 584) <= 3))
 		return;
 
+
+	NiSourceTexture* pMask = static_cast<NiSourceTexture*>(apShaderProp->GetTexture(BSTextureSet::BSSM_EnvMask, 0));
+	ShadowLightShaderManager::Toggles* pToggles = ShadowLightShaderManager::PixelConstants::GetToggles();
+	float fMaskPresent = 0.f;
+
+	if (pMask) {
+		fMaskPresent = 1.f;
+
+		// Check if mask uses an alpha format; needed to enable mipmap blur
+		NiPixelFormat::Format eFormat = pMask->GetDX9RendererData()->m_kPixelFormat.m_eFormat;
+		if (eFormat == NiPixelFormat::FORMAT_DXT3 || eFormat == NiPixelFormat::FORMAT_DXT5 || eFormat == NiPixelFormat::FORMAT_RGBA) {
+			fMaskPresent = -1.f;
+		}
+	}
+
+	pToggles->fAlphaTestRef = fMaskPresent;
+
+	// Override normal map strength used in the cubemap if requested
+	float fNormalStrength = 1.0f;
+	static const NiFixedString strNormalIntensity = NiFixedString("NormalIntensity");
+	NiFloatExtraData* pFloatData = static_cast<NiFloatExtraData*>(apGeo->GetExtraData(strNormalIntensity));
+
+	if (pFloatData)
+		fNormalStrength = min(15, pFloatData->m_fValue);
+
+	ShadowLightShaderManager::PixelConstants::GetToggles()->Unknown = fNormalStrength;
+
 	if (apShaderProp->HasEnvironmentMap() && (apShaderProp->ulFlags[1] & BSShaderProperty::Wall_RealTimeEnv || bOverride)) {
 
 		bool bIsPlayer = apShaderProp->uiExtraFlags & BSShaderLightingProperty::EF_IsPlayer;
 		bool bFakeInterior = CanRenderInteriorCubemap();
-		float fMaskPresent = 0.f;
-
-		NiSourceTexture* pMask = static_cast<NiSourceTexture*>(apShaderProp->GetTexture(BSTextureSet::BSSM_EnvMask, 0));
-		ShadowLightShaderManager::Toggles* pToggles = ShadowLightShaderManager::PixelConstants::GetToggles();
-
-		if (pMask) {
-			fMaskPresent = 1.f;
-
-			// Check if mask uses an alpha format; needed to enable mipmap blur
-			NiPixelFormat::Format eFormat = pMask->GetDX9RendererData()->m_kPixelFormat.m_eFormat;
-			if (eFormat == NiPixelFormat::FORMAT_DXT3 || eFormat == NiPixelFormat::FORMAT_DXT5 || eFormat == NiPixelFormat::FORMAT_RGBA) {
-				fMaskPresent = 2.f;
-			}
-		}
-
-		pToggles->fAlphaTestRef = fMaskPresent;
 
 		if (bOverrideBrightness) {
 			float fOverrideSpec = apShaderProp->fEnvMapScale * *BSShaderManager::bIsInInterior ? fInteriorBrightnessMult : fExteriorBrightnessMult;
@@ -814,17 +835,33 @@ void __fastcall CubemapRenderer::UpdateToggles_Hook(ShadowLightShader* apThis, v
 			pAmbientConstant->g = 1.0f;
 			pAmbientConstant->b = 1.0f;
 		}
+	}
+}
+
+void __fastcall CubemapRenderer::Shader30_UpdateToggles_Hook(Lighting30Shader* apThis, void*, BSShaderPPLightingProperty* apShaderProp) {
+	if (Lighting30ShaderManager::GetPixelConstantMapEntry(Lighting30Shader::kPX_EnvMapToggles)->bActive) {
+
+		BSRenderPass* pPass = BSRenderPass::GetCurrentPass();
+		NiGeometry* pGeo = pPass->pGeometry;
+		Lighting30ShaderManager::EnvToggles* pToggles = Lighting30ShaderManager::PixelConstants::GetEnvToggles();
+
+		NiSourceTexture* pMask = static_cast<NiSourceTexture*>(apShaderProp->GetTexture(BSTextureSet::BSSM_EnvMask, 0));
 
 
-		// Override normal map strength used in the cubemap if requested
-		float fNormalStrength = 1.0f;
+		float fMaskPresent = 0.f;
 
-		static const NiFixedString strCubeMap = NiFixedString("NormalIntensity");
-		NiFloatExtraData* pFloatData = static_cast<NiFloatExtraData*>(apGeo->GetExtraData(strCubeMap));
+		if (pMask) {
+			fMaskPresent = 1.f;
 
-		if (pFloatData)
-			fNormalStrength = min(15, pFloatData->m_fValue);
+			// Check if mask uses an alpha format; needed to enable mipmap blur
+			NiPixelFormat::Format eFormat = pMask->GetDX9RendererData()->m_kPixelFormat.m_eFormat;
+			if (eFormat == NiPixelFormat::FORMAT_DXT3 || eFormat == NiPixelFormat::FORMAT_DXT5 || eFormat == NiPixelFormat::FORMAT_RGBA) {
+				fMaskPresent = -1.f;
+			}
+		}
 
-		ShadowLightShaderManager::PixelConstants::GetToggles()->Unknown = fNormalStrength;
+		pToggles->bHasMask = fMaskPresent;
+
+		pToggles->fEnvMapScale = apShaderProp->fEnvMapScale;
 	}
 }

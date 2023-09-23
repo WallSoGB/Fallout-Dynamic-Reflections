@@ -106,12 +106,10 @@ bool NVSEPlugin_Load(NVSEInterface* nvse) {
 
 			// Player settings
 			CubemapRenderer::uiPlayerUpdateRate = ini.GetLongValue("Player", "uiPlayerUpdateRate", 1);
-			CubemapRenderer::uiPlayerCubemapSize = ini.GetLongValue("Player", "uiPlayerCubemapSize", 512);
 			CubemapRenderer::fPlayerViewDistance = ini.GetDoubleValue("Player", "fPlayerViewDistance", 6500.0);
 
 			// World settings
 			CubemapRenderer::uiWorldUpdateRate = ini.GetLongValue("World", "uiWorldUpdateRate", 3);
-			CubemapRenderer::uiWorldCubemapSize = ini.GetLongValue("World", "uiWorldCubemapSize", 512);
 			CubemapRenderer::fWorldViewDistance = ini.GetDoubleValue("World", "fWorldViewDistance", 200000.0);
 			CubemapRenderer::bNoWorldInInteriors = ini.GetBoolValue("World", "bNoWorldInInteriors", 0);
 			CubemapRenderer::bNoWorldInExteriors = ini.GetBoolValue("World", "bNoWorldInExteriors", 0);

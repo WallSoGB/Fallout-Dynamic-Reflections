@@ -1,26 +1,10 @@
-//
-//
 // Parameters:
 
-sampler2D   NormalMap           : register(s0);
-samplerCUBE EnvironmentCubeMap  : register(s1);
-sampler2D   DiffuseMap          : register(s2);
-sampler2D   CustomEnvMask       : register(s3);
-float4      AmbientColor        : register(c1);
-float4      EnvToggles          : register(c27);
-
-
-// Registers:
-//
-//   Name               Reg   Size
-//   ------------------ ----- ----
-//   AmbientColor       const_1       1
-//   EnvToggles         const_27      1
-//   NormalMap          texture_0       1
-//   EnvironmentCubeMap texture_1       1
-//   CustomEnvMask      texture_3       1
-//
-
+sampler2D       NormalMap           : register(s0);
+samplerCUBE     EnvironmentCubeMap  : register(s1);
+sampler2D       CustomEnvMask       : register(s3);
+float4          AmbientColor        : register(c1);
+float4          EnvToggles          : register(c27);
 
 // Structures:
 
@@ -49,17 +33,14 @@ VS_OUTPUT main(VS_INPUT IN) {
     float3 r0;
     float3 vProcessedNormals;
     float3 vProcessedCubemap;
-    float4 vDiffMap;
     float4 vNormalMap;
     float4 vEnvMask;
     float4 vCubemap;
     float4 cubeCoord; 
 
-    float1 bHasMask = 0;   
-
-    vDiffMap.rgba = tex2D(DiffuseMap, IN.TextureCoords.xy);
     vNormalMap.rgba = tex2D(NormalMap, IN.TextureCoords.xy);
-    vEnvMask.rgba = tex2D(CustomEnvMask, IN.TextureCoords.xy);
+    vEnvMask.rgba   = tex2D(CustomEnvMask, IN.TextureCoords.xy);
+
     vProcessedNormals.xyz = normalize(expand(vNormalMap.rgb));
     vProcessedNormals.xy = vProcessedNormals.xy * EnvToggles.y;
     vProcessedNormals.xyz = normalize(vProcessedNormals.xyz);
@@ -70,20 +51,20 @@ VS_OUTPUT main(VS_INPUT IN) {
     r0.y = dot(vProcessedNormals.xyz, IN.texcoord_2.xyz);
     r0.x = dot(vProcessedNormals.xyz, IN.texcoord_1.xyz);
 
-    cubeCoord.rgb = envreflect(normalize(r0.xyz), normalize(vCubemap.rgb));
-    cubeCoord.a = 0;
+    cubeCoord.xyz = envreflect(normalize(r0.xyz), normalize(vCubemap.rgb));
+    cubeCoord.w = 0;
 
-    if (EnvToggles.w > 1.0) {
-        cubeCoord.a = lerp(0, 10, vEnvMask.a);
-        bHasMask = 1;
+    // Negative iMaskState means mask has alpha channel
+    if (EnvToggles.w < 0.0) {
+        cubeCoord.w = lerp(0, 9, pow(vEnvMask.a, 0.5));
     }
-
+    
     vCubemap.rgba = texCUBElod(EnvironmentCubeMap, cubeCoord);
 
-    // EnvToggles.w is 1 if mask is present
+    // iMaskState is 1 if mask is present
     // EnvToggles.z is env map scale
     // AmbientColor.a is fade
-    vProcessedCubemap.rgb = vCubemap.rgb * (lerp(vNormalMap.a, vEnvMask.x, (EnvToggles.w - bHasMask)) * EnvToggles.z) * AmbientColor.rgba * vDiffMap.rgb;
+    vProcessedCubemap.rgb = vCubemap.rgb * (lerp(vNormalMap.a, vEnvMask.r, abs(EnvToggles.w)) * EnvToggles.z) * AmbientColor.rgba;
 
     OUT.vColor.a = 1;
     OUT.vColor.rgb = ((EnvToggles.x <= 0.0 ? vProcessedCubemap.rgb : (vProcessedCubemap.rgb * IN.VertexColor.rgb)) * IN.texcoord_4.x);
