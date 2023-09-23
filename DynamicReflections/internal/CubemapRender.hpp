@@ -9,8 +9,6 @@
 
 class TESMain;
 
-NiSmartPointer(CubemapRenderer);
-
 class CubemapRenderer {
 public:
 	enum SkipMode {
