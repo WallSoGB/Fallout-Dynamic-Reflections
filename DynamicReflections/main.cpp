@@ -33,7 +33,7 @@ void MessageHandler(NVSEMessagingInterface::Message* msg) {
 bool NVSEPlugin_Query(const NVSEInterface* nvse, PluginInfo* info) {
 	info->infoVersion = PluginInfo::kInfoVersion;
 	info->name = "Dynamic Reflections";
-	info->version = 130;
+	info->version = 131;
 
 	return true;
 }
