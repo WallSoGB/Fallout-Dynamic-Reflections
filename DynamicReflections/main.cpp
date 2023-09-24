@@ -63,6 +63,7 @@ bool NVSEPlugin_Load(NVSEInterface* nvse) {
 	nvse->SetOpcodeBase(uiOpCodeBase);
 
 	REG_CMD(CubemapRefreshCell);
+	REG_CMD(CubemapSaveToFile);
 
 	if (!nvse->isEditor) {
 		CSimpleIniA ini;
