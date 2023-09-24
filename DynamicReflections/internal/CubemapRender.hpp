@@ -68,8 +68,9 @@ public:
 	static float fInteriorBrightnessMult;
 
 	static void InitHooks();
+	static void CheckILSStatus();
 	static bool SearchCamera(TESObjectCELL* apCell);
-	static void UpdateFog(ShadowSceneNode* apScene, float afViewDistance);
+	static void UpdateFog(ShadowSceneNode* apScene, float afViewDistance, NiCamera* apCamera);
 	static void RestoreFog(ShadowSceneNode* apScene);
 	static void ManageTextureResidency(UInt32 uiForcePurge = 0);
 	static bool CanRenderInteriorCubemap();

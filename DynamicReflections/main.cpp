@@ -21,6 +21,7 @@ void MessageHandler(NVSEMessagingInterface::Message* msg) {
 	switch (msg->type) {
 	case NVSEMessagingInterface::kMessage_DeferredInit:
 		CubemapRenderer::pSourceEyeCubeMap = *(NiSourceTexture**)0x11F9544;
+		CubemapRenderer::CheckILSStatus();
 		break;
 	case NVSEMessagingInterface::kMessage_PreLoadGame:
 		CubemapRenderer::bRefreshCell = true;
@@ -33,7 +34,7 @@ void MessageHandler(NVSEMessagingInterface::Message* msg) {
 bool NVSEPlugin_Query(const NVSEInterface* nvse, PluginInfo* info) {
 	info->infoVersion = PluginInfo::kInfoVersion;
 	info->name = "Dynamic Reflections";
-	info->version = 131;
+	info->version = 132;
 
 	return true;
 }

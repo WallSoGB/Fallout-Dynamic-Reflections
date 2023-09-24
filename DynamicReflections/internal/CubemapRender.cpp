@@ -144,13 +144,21 @@ void CubemapRenderer::InitHooks() {
 		// 30Shader
 		ReplaceCall(0xBBB5A5, BSShader::CreatePixelShader);
 	}
+}
 
+void CubemapRenderer::CheckILSStatus() {
 	UInt32 uiILSBase = (UInt32)GetModuleHandle("ImprovedLightingShaders.dll");
 
 	if (uiILSBase != 0) {
-		uiILSAmbientColorAddr = uiILSBase + 0x22638;
-		_MESSAGE("[ CubemapRenderer::InitHooks ] ILS detected. Ambient color should be at %x", uiILSAmbientColorAddr);
-		bILSPresent = true;
+		bool* bIncreaseLightBuffers = (bool*)(uiILSBase + 0x2240D);
+		if (*bIncreaseLightBuffers) {
+			uiILSAmbientColorAddr = uiILSBase + 0x22638;
+			_MESSAGE("[ CubemapRenderer::CheckILSStatus ] ILS detected. Ambient color should be at %x", uiILSAmbientColorAddr);
+			bILSPresent = true;
+		}
+		else {
+			_MESSAGE("[ CubemapRenderer::CheckILSStatus ] ILS detected, but the bIncreaseLightBuffers is off");
+		}
 	}
 }
 
@@ -196,12 +204,26 @@ bool CubemapRenderer::SearchCamera(TESObjectCELL* apCell)
 static float fOrgEnd;
 static float fOrgStart;
 
-void CubemapRenderer::UpdateFog(ShadowSceneNode* apScene, float afViewDistance) {
+void CubemapRenderer::UpdateFog(ShadowSceneNode* apScene, float afViewDistance, NiCamera* apCamera) {
 	fOrgEnd = apScene->spFog->fEndDistance;
 	fOrgStart = apScene->spFog->fStartDistance;
 
-	apScene->spFog->fEndDistance = afViewDistance * 0.8f;
-	apScene->spFog->fStartDistance = afViewDistance * 0.6f;
+	float fEnd = afViewDistance * 0.8f;
+	float fStart = afViewDistance * 0.6f;
+
+	if (fEnd > fOrgEnd) {
+		fEnd = fOrgEnd;
+		apCamera->m_kViewFrustum.m_fFar = fEnd * 1.2f;
+	}
+	else {
+		apCamera->m_kViewFrustum.m_fFar = afViewDistance;
+	}
+
+	if (fStart > fOrgStart)
+		fStart = fOrgStart;
+
+	apScene->spFog->fEndDistance = fEnd;
+	apScene->spFog->fStartDistance = fStart;
 }
 
 void CubemapRenderer::RestoreFog(ShadowSceneNode* apScene) {
@@ -499,7 +521,7 @@ void CubemapRenderer::RenderCubemap() {
 			_MESSAGE("[ CubemapRenderer::RenderCubemap ] Rendering player cubemap");
 #endif
 
-			UpdateFog(pShadowSceneNode, CubemapRenderer::fPlayerViewDistance);
+			UpdateFog(pShadowSceneNode, CubemapRenderer::fPlayerViewDistance, pPlayerCubeCam);
 			pPlayerCubeCam->RenderCubeMap(0, uiUpdateRate, bDumpToFile ? BSCullingProcess::BSCP_CULL_ALLPASS : BSCullingProcess::BSCP_CULL_FORCEMULTIBOUNDSNOUPDATE, true);
 			RestoreFog(pShadowSceneNode);
 
@@ -571,7 +593,7 @@ void CubemapRenderer::RenderCubemap() {
 			_MESSAGE("[ CubemapRenderer::RenderCubemap ] Rendering world cubemap");
 #endif
 
-			UpdateFog(pShadowSceneNode, CubemapRenderer::fWorldViewDistance);
+			UpdateFog(pShadowSceneNode, CubemapRenderer::fWorldViewDistance, pWorldCubeCam);
 			pWorldCubeCam->RenderCubeMap(&kSceneNodes, uiWorldUpdateRate, BSCullingProcess::BSCP_CULL_FORCEMULTIBOUNDSNOUPDATE, bRenderLandLOD);
 			RestoreFog(pShadowSceneNode);
 
