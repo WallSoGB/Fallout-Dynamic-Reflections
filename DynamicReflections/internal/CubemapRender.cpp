@@ -74,6 +74,10 @@ static UInt32 uiPlayerCubemapUnuseTimer = 0;
 static UInt32 uiPlayerInteriorCubemapUnuseTimer = 0;
 static bool bThirdPerson = false;
 
+static bool bILSPresent = false;
+
+static UInt32 uiILSAmbientColorAddr;
+
 void SetCubemapFlag(NiNode* pObject) {
 	UInt32 uiChildCount = pObject->m_kChildren.GetSize();
 
@@ -140,7 +144,20 @@ void CubemapRenderer::InitHooks() {
 		// 30Shader
 		ReplaceCall(0xBBB5A5, BSShader::CreatePixelShader);
 	}
+
+	UInt32 uiILSBase = (UInt32)GetModuleHandle("ImprovedLightingShaders.dll");
+
+	if (uiILSBase != 0) {
+		uiILSAmbientColorAddr = uiILSBase + 0x22638;
+		_MESSAGE("[ CubemapRenderer::InitHooks ] ILS detected. Ambient color should be at %x", uiILSAmbientColorAddr);
+		bILSPresent = true;
+	}
 }
+
+static __forceinline NiColorA* GetAmbientColorILS() {
+	return (NiColorA*)uiILSAmbientColorAddr;
+}
+
 
 bool CubemapRenderer::SearchCamera(TESObjectCELL* apCell)
 {
@@ -822,7 +839,7 @@ void __fastcall CubemapRenderer::SLS_UpdateToggles_Hook(ShadowLightShader* apThi
 		// Set ambient color to prevent cubemaps unnaturally glowing in dark areas
 		// Forces 1s in order to prevent color leaks from previous passes (ambient is also used for emissive color - we don't want glowing cubemaps)
 		// Alpha is skipped as it's used as the fade value
-		NiColorA* pAmbientConstant = ShadowLightShaderManager::PixelConstants::GetAmbientColor();
+		NiColorA* pAmbientConstant = bILSPresent ? GetAmbientColorILS() : ShadowLightShaderManager::PixelConstants::GetAmbientColor();
 
 		if (bUseAmbient && bFakeInterior && (!bIsPlayer || (bIsPlayer && bThirdPerson))) {
 			NiColor* pAmbient = Sky::GetInstance()->GetAmbientColor();

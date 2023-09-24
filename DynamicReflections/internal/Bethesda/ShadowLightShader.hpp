@@ -110,62 +110,62 @@ public:
 
 		// 8
 		static __forceinline D3DMATRIX* GetWorldTranspose() {
-			return &(*(D3DMATRIX*)0x11FECC8);
+			return (D3DMATRIX*)0x11FECC8;
 		}
 
 		// 9
 		static __forceinline D3DMATRIX* GetSkinWorldTranspose() {
-			return &(*(D3DMATRIX*)0x11FEC88);
+			return (D3DMATRIX*)0x11FEC88;
 		}
 
 		// 12
 		static __forceinline NiVector4* GetHighDetailRange() {
-			return &(*(NiVector4*)0x11FA2E0);
+			return (NiVector4*)0x11FA2E0;
 		}
 
 		// 13
 		static __forceinline float* GetTime() {
-			return &(*(float*)0x11FD868);
+			return (float*)0x11FD868;
 		}
 
 		// 14 - params, 15 - color
 		static __forceinline FogProperties* GetFogParam() {
-			return &(*(FogProperties*)0x11FA280);
+			return (FogProperties*)0x11FA280;
 		}
 
 		// 16
 		static __forceinline NiVector4* EyePosition() {
-			return &(*(NiVector4*)0x11FD894);
+			return (NiVector4*)0x11FD894;
 		}
 
 		// 17
 		static __forceinline NiVector4* GetDepthData() {
-			return &(*(NiVector4*)0x11FD954);
+			return (NiVector4*)0x11FD954;
 		}
 
 		// 18
 		static __forceinline D3DMATRIX* GetShadowProj() {
-			return &(*(D3DMATRIX*)0x11FD968);
+			return (D3DMATRIX*)0x11FD968;
 		}
 
 		// 19
 		static __forceinline NiVector4* GetLODLandParams() {
-			return &(*(NiVector4*)0x11FA0B0);
+			return (NiVector4*)0x11FA0B0;
 		}
 
 		// 22
 		static __forceinline NiVector4* GetShadowProjData() {
-			return &(*(NiVector4*)0x11FD874);
+			return (NiVector4*)0x11FD874;
 		}
 
 		// 23
 		static __forceinline NiVector4* GetShadowProjTransform() {
-			return &(*(NiVector4*)0x11FD884);
+			return (NiVector4*)0x11FD884;
 		}
 
 		// 24
 		static __forceinline NiVector4* GetBoundCenter() {
-			return &(*(NiVector4*)0x11FD8B4);
+			return (NiVector4*)0x11FD8B4;
 		}
 
 		// 25; aka LightDirection
@@ -175,12 +175,12 @@ public:
 
 		// 35
 		static __forceinline D3DMATRIX* PrevWorldViewPT() {
-			return &(*(D3DMATRIX*)0x11FED08);
+			return (D3DMATRIX*)0x11FED08;
 		}
 
 		// 39
 		static __forceinline D3DMATRIX* PrevWorldViewT() {
-			return &(*(D3DMATRIX*)0x11FED48);
+			return (D3DMATRIX*)0x11FED48;
 		}
 
 		// 98
@@ -192,17 +192,17 @@ public:
 	struct PixelConstants {
 		// 0
 		static __forceinline NiVector4* GetEyeDir() {
-			return &(*(NiVector4*)0x11FD8A4);
+			return (NiVector4*)0x11FD8A4;
 		}
 
 		// 1
 		static __forceinline NiColorA* GetAmbientColor() {
-			return &(*(NiColorA*)0x11FA0C0);
+			return (NiColorA*)0x11FA0C0;
 		}
 
 		// 2
 		static __forceinline NiColorA* GetEmittanceColor() {
-			return &(*(NiColorA*)0x11FA270);
+			return (NiColorA*)0x11FA270;
 		}
 
 		// 3
@@ -212,12 +212,12 @@ public:
 
 		// 14 - params, 15 - color
 		static __forceinline FogProperties* GetFogParams() {
-			return &(*(FogProperties*)0x11FA280);
+			return (FogProperties*)0x11FA280;
 		}
 
 		// 16
 		static __forceinline float* GetFogPlane() {
-			return &(*(float*)0x11FA2A0);
+			return (float*)0x11FA2A0;
 		}
 
 		// 18
@@ -227,32 +227,32 @@ public:
 
 		// 17
 		static __forceinline NiVector4* GetEyePosition() {
-			return &(*(NiVector4*)0x11FD894);
+			return (NiVector4*)0x11FD894;
 		}
 
 		// 27
 		static __forceinline Toggles* GetToggles() {
-			return &(*(Toggles*)0x11FA2D0);
+			return (Toggles*)0x11FA2D0;
 		}
 
 		// 28
 		static __forceinline NiColorA* HairTint() {
-			return &(*(NiColorA*)0x11FA090);
+			return (NiColorA*)0x11FA090;
 		}
 
 		// 29
 		static __forceinline NiVector4* GetRefractionParams() {
-			return &(*(NiVector4*)0x11FD944);
+			return (NiVector4*)0x11FD944;
 		}
 
 		// 30
 		static __forceinline NiVector4* GetSTBBColorConstants() {
-			return &(*(NiVector4*)0x11FA2F0);
+			return (NiVector4*)0x11FA2F0;
 		}
 
 		// 31
 		static __forceinline NiPoint4* GetLODTEXPARAMS() {
-			return &(*(NiPoint4*)0x11FA300);
+			return (NiPoint4*)0x11FA300;
 		}
 	};
 
