@@ -838,10 +838,10 @@ void __fastcall CubemapRenderer::SLS_UpdateToggles_Hook(ShadowLightShader* apThi
 
 	ShadowLightShaderManager::PixelConstants::GetToggles()->Unknown = fNormalStrength;
 
-	if (apShaderProp->HasEnvironmentMap() && (apShaderProp->ulFlags[1] & BSShaderProperty::Wall_RealTimeEnv || bOverride)) {
+	bool bIsPlayer = apShaderProp->uiExtraFlags & BSShaderLightingProperty::EF_IsPlayer;
+	bool bFakeInterior = CanRenderInteriorCubemap();
 
-		bool bIsPlayer = apShaderProp->uiExtraFlags & BSShaderLightingProperty::EF_IsPlayer;
-		bool bFakeInterior = CanRenderInteriorCubemap();
+	if (apShaderProp->HasEnvironmentMap() && (apShaderProp->ulFlags[1] & BSShaderProperty::Wall_RealTimeEnv || bOverride)) {
 
 		if (bOverrideBrightness) {
 			float fOverrideSpec = apShaderProp->fEnvMapScale * *BSShaderManager::bIsInInterior ? fInteriorBrightnessMult : fExteriorBrightnessMult;
@@ -856,24 +856,23 @@ void __fastcall CubemapRenderer::SLS_UpdateToggles_Hook(ShadowLightShader* apThi
 				pToggles->fSpecularity = fOverrideSpec;
 			}
 		}
+	}
 
+	// Set ambient color to prevent cubemaps unnaturally glowing in dark areas
+	// Forces 1s in order to prevent color leaks from previous passes (ambient is also used for emissive color - we don't want glowing cubemaps)
+	// Alpha is skipped as it's used as the fade value
+	NiColorA* pAmbientConstant = bILSPresent ? GetAmbientColorILS() : ShadowLightShaderManager::PixelConstants::GetAmbientColor();
 
-		// Set ambient color to prevent cubemaps unnaturally glowing in dark areas
-		// Forces 1s in order to prevent color leaks from previous passes (ambient is also used for emissive color - we don't want glowing cubemaps)
-		// Alpha is skipped as it's used as the fade value
-		NiColorA* pAmbientConstant = bILSPresent ? GetAmbientColorILS() : ShadowLightShaderManager::PixelConstants::GetAmbientColor();
-
-		if (bUseAmbient && bFakeInterior && (!bIsPlayer || (bIsPlayer && bThirdPerson))) {
-			NiColor* pAmbient = Sky::GetInstance()->GetAmbientColor();
-			pAmbientConstant->r = pAmbient->r;
-			pAmbientConstant->g = pAmbient->g;
-			pAmbientConstant->b = pAmbient->b;
-		}
-		else {
-			pAmbientConstant->r = 1.0f;
-			pAmbientConstant->g = 1.0f;
-			pAmbientConstant->b = 1.0f;
-		}
+	if (bUseAmbient && bFakeInterior && (!bIsPlayer || (bIsPlayer && bThirdPerson))) {
+		NiColor* pAmbient = Sky::GetInstance()->GetAmbientColor();
+		pAmbientConstant->r = pAmbient->r;
+		pAmbientConstant->g = pAmbient->g;
+		pAmbientConstant->b = pAmbient->b;
+	}
+	else {
+		pAmbientConstant->r = 1.0f;
+		pAmbientConstant->g = 1.0f;
+		pAmbientConstant->b = 1.0f;
 	}
 }
 
