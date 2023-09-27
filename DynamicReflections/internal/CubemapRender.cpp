@@ -558,6 +558,8 @@ void CubemapRenderer::RenderCubemap() {
 			}
 
 			BGSTerrainManager* pTerrainManager = TES::GetWorldSpace()->GetTerrainManager();
+			float fOrgLandDrop = *BSShaderManager::fLODLandDrop;
+
 
 			// Add nodes to the list to be rendered
 			if (spCameraNode.m_pObject) {
@@ -581,6 +583,8 @@ void CubemapRenderer::RenderCubemap() {
 				}
 
 				if (bRenderLandLOD) {
+					*BSShaderManager::fLODLandDrop = 0;
+
 					kSceneNodes.AddHead(BGSTerrainManager::GetRootLandLODNode());
 					kSceneNodes.AddHead(pTerrainManager->GetWaterLODNode());
 				}
@@ -598,6 +602,10 @@ void CubemapRenderer::RenderCubemap() {
 			RestoreFog(pShadowSceneNode);
 
 			bRendering = false;
+
+			if (!spCameraNode.m_pObject && bRenderLandLOD){
+				*BSShaderManager::fLODLandDrop = fOrgLandDrop;
+			}
 
 			spRenderedCubemapWorld = static_cast<NiRenderedCubeMap*>(pWorldTexture->spRenderedTextures[0].m_pObject);
 
