@@ -64,7 +64,10 @@ VS_OUTPUT main(VS_INPUT IN) {
     // EnvToggles.w is 1 if mask is present
     // EnvToggles.z is env map scale
     // AmbientColor.a is fade
-    vProcessedCubemap.rgb = vCubemap.rgb * (lerp(vNormalMap.a, vEnvMask.r, abs(EnvToggles.w)) * EnvToggles.z) * AmbientColor.rgba;
+    vProcessedCubemap.rgb = vCubemap.rgb * (lerp(vNormalMap.a, vEnvMask.r, abs(EnvToggles.w)) * EnvToggles.z) * AmbientColor.rgb;
+
+    // Fade
+    vProcessedCubemap *= AmbientColor.a;
 
     OUT.vColor.a = 1;
     OUT.vColor.rgb = ((EnvToggles.x <= 0.0 ? vProcessedCubemap.rgb : (vProcessedCubemap.rgb * IN.VertexColor.rgb)) * IN.texcoord_4.x);
