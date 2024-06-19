@@ -54,7 +54,7 @@ bool Cmd_CubemapSaveToFile_Execute(COMMAND_ARGS) {
 	return true;
 }
 
-DEFINE_COMMAND_PLUGIN(CubemapSaveToFile, "Saves player's cubemap as BMP files in the root folder", false, NULL)
+DEFINE_COMMAND_PLUGIN(CubemapSaveToFile, "Saves player's cubemap as a DDS file in the root folder", false, NULL)
 DEFINE_COMMAND_PLUGIN(CubemapRefreshCell, "Forcibly scans the current cell for new cubemap cameras", false, NULL)
 
 bool NVSEPlugin_Load(NVSEInterface* nvse) {
