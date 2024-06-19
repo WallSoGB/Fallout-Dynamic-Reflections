@@ -75,6 +75,8 @@ public:
 	static bool* const bIsInInterior;
 	static float* const fLODLandDrop;
 
+	static Bitfield32* const uiEnabledPasses;
+
 	static __forceinline ShadowSceneNode* GetShadowSceneNode(eSceneGraphEnum aeType) {
 		return ((ShadowSceneNode**)0x11F91C8)[aeType];
 	};

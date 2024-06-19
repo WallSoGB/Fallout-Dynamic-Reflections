@@ -43,7 +43,8 @@ public:
 
 	T_Data Get(UInt32 idx) { return (*this)[idx]; }
 
-	UInt16 GetSize(void) { return m_usSize; }
+	inline UInt16 GetEffectiveSize() const { return m_usESize; }
+	inline UInt16 GetSize() const { return m_usSize; }
 
 	void SetSize(UInt32 uiMaxSize) {
 		if (uiMaxSize == m_usMaxSize)

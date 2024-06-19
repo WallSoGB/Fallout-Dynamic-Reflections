@@ -78,7 +78,55 @@ static bool bILSPresent = false;
 
 static UInt32 uiILSAmbientColorAddr;
 
-void SetCubemapFlag(NiNode* pObject) {
+namespace LODController {
+	static float fOrgLODDrop = 0.f;
+	static std::vector<BSSegmentedTriShape*> kShapesToRestore;
+
+	static void ToggleLODRecurse(NiAVObject* apObject, bool abIgnore) {
+		if (!apObject)
+			return;
+
+		if (apObject->IsNiNode()) {
+			NiNode* pNode = (NiNode*)apObject;
+			for (UInt32 i = 0; i < pNode->GetArrayCount(); i++)
+				ToggleLODRecurse(pNode->GetAt(i), abIgnore);
+		}
+		else if (apObject->IsSegmentedTriShape()) {
+			BSSegmentedTriShape* pSegTriShape = (BSSegmentedTriShape*)apObject;
+			pSegTriShape->bIgnoreSegments = abIgnore;
+			if (abIgnore) {
+				if (!pSegTriShape->pSegments[0].bVisible) {
+					kShapesToRestore.push_back(pSegTriShape);
+				}
+				pSegTriShape->pSegments[0].bVisible = true;
+			}
+		}
+	}
+
+	static void ShowLOD(bool abObjects) {
+		fOrgLODDrop = *BSShaderManager::fLODLandDrop;
+		*BSShaderManager::fLODLandDrop = 0.f;
+
+		if (abObjects) {
+			NiNode* pRoot = *(NiNode**)0x11D8690;
+			ToggleLODRecurse(pRoot, true);
+		}
+	}
+
+	static void HideLOD(bool abObjects) {
+		*BSShaderManager::fLODLandDrop = fOrgLODDrop;
+		if (abObjects) {
+			NiNode* pRoot = *(NiNode**)0x11D8690;
+			ToggleLODRecurse(pRoot, false);
+			for (BSSegmentedTriShape* pShape : kShapesToRestore) {
+				pShape->pSegments[0].bVisible = false;
+			}
+			kShapesToRestore.clear();
+		}
+	}
+}
+
+static void SetCubemapFlag(NiNode* pObject) {
 	UInt32 uiChildCount = pObject->m_kChildren.GetSize();
 
 	if (!uiChildCount)
@@ -480,6 +528,8 @@ void CubemapRenderer::RenderCubemap() {
 		pPlayerNode1->SetAppCulled(true);
 		pPlayerNode2->SetAppCulled(true);
 
+		const UInt32 uiOrgPasses = BSShaderManager::uiEnabledPasses->Get();
+		BSShaderManager::uiEnabledPasses->RawSet(BSShaderManager::AMBIENT | BSShaderManager::DIFFUSE | BSShaderManager::TEXTURE | BSShaderManager::OPT);
 
 		// Player cubemap
 		if (eShouldSkip != SKIP_PLAYER && (bInUse_Player && !bLowQuality || bWorldOverride || bInteriorOverride || bDumpToFile)) {
@@ -549,7 +599,6 @@ void CubemapRenderer::RenderCubemap() {
 			}
 
 			BGSTerrainManager* pTerrainManager = TES::GetWorldSpace()->GetTerrainManager();
-			float fOrgLandDrop = *BSShaderManager::fLODLandDrop;
 
 
 			// Add nodes to the list to be rendered
@@ -574,12 +623,11 @@ void CubemapRenderer::RenderCubemap() {
 				}
 
 				if (bRenderLandLOD) {
-					*BSShaderManager::fLODLandDrop = 0;
-
 					kSceneNodes.AddHead(BGSTerrainManager::GetRootLandLODNode());
 					kSceneNodes.AddHead(pTerrainManager->GetWaterLODNode());
 				}
 
+				LODController::ShowLOD(bRenderObjectLOD);
 			}
 
 			bRendering = true;
@@ -594,8 +642,8 @@ void CubemapRenderer::RenderCubemap() {
 
 			bRendering = false;
 
-			if (!spCameraNode.m_pObject && bRenderLandLOD){
-				*BSShaderManager::fLODLandDrop = fOrgLandDrop;
+			if (!spCameraNode.m_pObject){
+				LODController::HideLOD(bRenderObjectLOD);
 			}
 
 			spRenderedCubemapWorld = static_cast<NiRenderedCubeMap*>(pWorldTexture->spRenderedTextures[0].m_pObject);
@@ -624,6 +672,8 @@ void CubemapRenderer::RenderCubemap() {
 		pSkyRoot->Update(g_defaultUpdateData);
 
 		pShadowSceneNode->bDisableLightUpdate = bLightProcessing;
+
+		BSShaderManager::uiEnabledPasses->RawSet(uiOrgPasses);
 
 		SaveCubemapToFiles();
 

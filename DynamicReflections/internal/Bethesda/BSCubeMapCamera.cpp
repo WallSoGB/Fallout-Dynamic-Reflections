@@ -83,8 +83,8 @@ void BSCubeMapCamera::SetupTransformation(UInt32 auiFace) {
 void BSCubeMapCamera::RenderCubeMap(NiTPointerListBase<NiAVObject*>* apNodeList, UInt32 auiMaxUpdates, UInt32 auiCullMode, bool abRenderWater) {
 	NiDX9Renderer* pRenderer = BSShaderManager::GetRenderer();
 	NiColorA orgColor;
-	pRenderer->GetBackgroundColor(&orgColor);
-	pRenderer->SetBackgroundColor(&Sky::GetInstance()->pColors[Sky::SC_FOG]);
+	pRenderer->GetBackgroundColor(orgColor);
+	pRenderer->SetBackgroundColor(Sky::GetInstance()->pColors[Sky::SC_FOG]);
 
 	bool bUseReflectionsOrg = false;
 	bool bUseDepthOrg = false;
@@ -153,5 +153,5 @@ void BSCubeMapCamera::RenderCubeMap(NiTPointerListBase<NiAVObject*>* apNodeList,
 		*eRendererSettingCollection::Water_bUseWaterReflections = bUseReflectionsOrg;
 		*eRendererSettingCollection::Water_bUseWaterDepth = bUseDepthOrg;
 	}
-	pRenderer->SetBackgroundColorAlpha(&orgColor);
+	pRenderer->SetBackgroundColorAlpha(orgColor);
 }

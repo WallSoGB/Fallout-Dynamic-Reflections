@@ -10,17 +10,17 @@ public:
 	~BSSegmentedTriShape();
 
 	struct Segment {
-		UInt32 uiStartIndex;
-		UInt32 uiNumPrimitives;
-		bool bIsEnabled;
-		UInt32 uiTriCount;
-		UInt8 ucDisabledCount;
+		UInt32	uiStartIndex;
+		UInt32	uiNumPrimitives;
+		bool	bIsEnabled;
+		UInt32	uiTriCount;
+		bool	bVisible;
 	};
 
-	Segment* pSegments;
-	UInt32 uiNumSegments;
-	bool bSegmentsChanged;
-	bool bIgnoreSegments;
+	Segment*	pSegments;
+	UInt32		uiNumSegments;
+	bool		bSegmentsChanged;
+	bool		bIgnoreSegments;
 
 	CREATE_OBJECT(BSSegmentedTriShape, 0xA87140);
 

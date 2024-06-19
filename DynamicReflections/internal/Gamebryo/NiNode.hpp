@@ -25,6 +25,8 @@ public:
 	CREATE_OBJECT(NiNode, 0xA5F030);
 
 	NiAVObject* GetAt(UInt32 i);
+	UInt32 GetArrayCount() const;
+	UInt32 GetChildCount() const;
 };
 
 ASSERT_SIZE(NiNode, 0xAC);
