@@ -135,15 +135,6 @@ void CubemapRenderer::InitHooks() {
 
 	// Replaces cubemap creator with a modified version allowing for mipmaps
 	ReplaceCall(0xE901D5, NiDX9RenderedCubeMapData::CreateSurf);
-	
-	// Replace ShadowLightShader pixel shader create func
-	// In case NVR is used, we use its own shader loader
-	if (GetModuleHandle("NewVegasReloaded.dll") == nullptr) {
-		ReplaceCall(0xB78907, BSShader::CreatePixelShader);
-
-		// 30Shader
-		ReplaceCall(0xBBB5A5, BSShader::CreatePixelShader);
-	}
 }
 
 void CubemapRenderer::CheckILSStatus() {

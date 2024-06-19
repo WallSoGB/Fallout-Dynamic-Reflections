@@ -85,10 +85,6 @@ public:
 	bool IsBSShaderBloodSplatter() const { return iShaderType == TYPE_BSShaderBloodSplatter; }
 	bool IsBSImagespaceShader() const { return iShaderType == TYPE_BSImagespaceShader; }
 	bool IsBSDistantTreeShader() const { return iShaderType == TYPE_BSDistantTreeShader; }
-
-	static void __fastcall SetShadersEx(BSShader* apThis, void*, RenderPassTypes aeType);
-
-	static NiD3DPixelShader* __fastcall CreatePixelShader(BSShader* apThis, void*, const char* apPath, D3DXMACRO* apMacro, const char* apShaderVersion, const char* apFilename);
 };
 
 ASSERT_SIZE(BSShader, 0x6C);

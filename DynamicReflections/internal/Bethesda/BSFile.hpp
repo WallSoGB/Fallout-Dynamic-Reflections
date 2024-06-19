@@ -6,7 +6,7 @@
 class BSFile : public NiFile {
 public:
 	BSFile();
-	~BSFile();
+	virtual ~BSFile();
 
 	virtual bool	Open(int, bool abTextMode);
 	virtual bool	OpenByFilePointer(void* apFile);
