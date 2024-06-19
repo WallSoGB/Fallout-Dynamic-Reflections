@@ -764,18 +764,7 @@ void CubemapRenderer::RenderSceenSpaceCubemap() {
 
 void CubemapRenderer::SaveCubemapToFiles() {
 	if (bDumpToFile) {
-		NiDX9Renderer* pRenderer = NiDX9Renderer::GetSingleton();
-
-		D3DSURFACE_DESC desc;
-		for (UInt32 uiFace = 0; uiFace < 6; uiFace++) {
-			LPDIRECT3DSURFACE9 pNewSurf;
-			LPDIRECT3DSURFACE9 surf = reinterpret_cast<NiDX92DBufferData*>(spRenderedCubemapPlayer->GetFaceBuffer(uiFace)->m_spRendererData.m_pObject)->m_pkSurface;
-			surf->GetDesc(&desc);
-			pRenderer->GetD3DDevice()->CreateOffscreenPlainSurface(desc.Height, desc.Height, desc.Format, D3DPOOL_SYSTEMMEM, &pNewSurf, 0);
-			pRenderer->GetD3DDevice()->GetRenderTargetData(surf, pNewSurf);
-			D3DXSaveSurfaceToFile(std::format("face_{}.bmp", uiFace).c_str(), D3DXIFF_BMP, pNewSurf, 0, 0);
-			pNewSurf->Release();
-		}
+		D3DXSaveTextureToFile("player_cubemap.dds", D3DXIFF_DDS, spRenderedCubemapPlayer->GetDX9RendererData()->GetD3DTexture(), 0);
 		bDumpToFile = false;
 	}
 }
