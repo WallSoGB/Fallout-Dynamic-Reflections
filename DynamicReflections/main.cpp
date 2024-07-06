@@ -96,6 +96,7 @@ bool NVSEPlugin_Load(NVSEInterface* nvse) {
 			}
 
 			CubemapRenderer::bRenderObjectLOD = ini.GetBoolValue("Quality", "bRenderObjectLOD", 1);
+			CubemapRenderer::bRenderCloseObjectLOD = ini.GetBoolValue("Quality", "bRenderCloseObjectLOD", 0);
 			CubemapRenderer::bRenderLandLOD = ini.GetBoolValue("Quality", "bRenderLandLOD", 1);
 			CubemapRenderer::bOverrideBrightness = ini.GetBoolValue("Quality", "bOverrideBrightness", 0);
 			CubemapRenderer::fInteriorBrightnessMult = ini.GetDoubleValue("Quality", "fInteriorBrightnessMult", 0.7);

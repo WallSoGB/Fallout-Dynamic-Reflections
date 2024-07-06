@@ -41,6 +41,7 @@ public:
 	static bool bHighQuality;
 	static bool bLowQuality;
 	static bool bRenderObjectLOD;
+	static bool bRenderCloseObjectLOD;
 	static bool bRenderLandLOD;
 	static bool bScreenSpaceInterior;
 	static bool bNoWorldInInteriors;

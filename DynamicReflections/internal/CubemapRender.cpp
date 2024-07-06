@@ -46,6 +46,7 @@ bool CubemapRenderer::bOverrideBrightness;
 bool CubemapRenderer::bHighQuality;
 bool CubemapRenderer::bLowQuality;
 bool CubemapRenderer::bRenderObjectLOD;
+bool CubemapRenderer::bRenderCloseObjectLOD;
 bool CubemapRenderer::bRenderLandLOD;
 bool CubemapRenderer::bRendering = false;
 bool CubemapRenderer::bRefreshCell = false;
@@ -627,7 +628,7 @@ void CubemapRenderer::RenderCubemap() {
 					kSceneNodes.AddHead(pTerrainManager->GetWaterLODNode());
 				}
 
-				LODController::ShowLOD(bRenderObjectLOD);
+				LODController::ShowLOD(bRenderCloseObjectLOD);
 			}
 
 			bRendering = true;
@@ -643,7 +644,7 @@ void CubemapRenderer::RenderCubemap() {
 			bRendering = false;
 
 			if (!spCameraNode.m_pObject){
-				LODController::HideLOD(bRenderObjectLOD);
+				LODController::HideLOD(bRenderCloseObjectLOD);
 			}
 
 			spRenderedCubemapWorld = static_cast<NiRenderedCubeMap*>(pWorldTexture->spRenderedTextures[0].m_pObject);
