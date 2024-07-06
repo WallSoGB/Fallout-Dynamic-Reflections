@@ -16,11 +16,20 @@ NVSEInterface* g_nvseInterface{};
 IDebugLog	   gLog("logs\\DynamicReflections.log");
 
 static LPSTR g_CurrentDir;
+static NVSEMessagingInterface* pMsgInterface = nullptr;
+static UInt32 uiPluginHandle = 0;
+
+void ShaderRefreshHandler(NVSEMessagingInterface::Message* msg) {
+	if (msg->type == 0) {
+		CubemapRenderer::LoadShaders();
+	}
+}
 
 void MessageHandler(NVSEMessagingInterface::Message* msg) {
 	switch (msg->type) {
 	case NVSEMessagingInterface::kMessage_PostLoad:
 		CubemapRenderer::CheckShaderLoader();
+		pMsgInterface->RegisterListener(uiPluginHandle, "Shader Loader", ShaderRefreshHandler);
 		break;
 	case NVSEMessagingInterface::kMessage_DeferredInit:
 		CubemapRenderer::pSourceEyeCubeMap = *(NiSourceTexture**)0x11F9544;
@@ -38,7 +47,7 @@ void MessageHandler(NVSEMessagingInterface::Message* msg) {
 bool NVSEPlugin_Query(const NVSEInterface* nvse, PluginInfo* info) {
 	info->infoVersion = PluginInfo::kInfoVersion;
 	info->name = "Dynamic Reflections";
-	info->version = 136;
+	info->version = 137;
 
 	return true;
 }
@@ -77,7 +86,9 @@ bool NVSEPlugin_Load(NVSEInterface* nvse) {
 			_MESSAGE("INI not found!");
 		};
 
-		((NVSEMessagingInterface*)nvse->QueryInterface(kInterface_Messaging))->RegisterListener(nvse->GetPluginHandle(), "NVSE", MessageHandler);
+		pMsgInterface = (NVSEMessagingInterface*)nvse->QueryInterface(kInterface_Messaging);
+		uiPluginHandle = nvse->GetPluginHandle();
+		pMsgInterface->RegisterListener(uiPluginHandle, "NVSE", MessageHandler);
 
 
 		// Fix for broken reflection toggles

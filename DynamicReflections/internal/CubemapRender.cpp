@@ -193,6 +193,8 @@ typedef bool* (__cdecl pfn_NVSEPlugin_Query)(const NVSEInterface* nvse, PluginIn
 static pfn_CreatePixelShader* pLoadPixelShader = nullptr;
 static pfn_CreateVertexShader* pLoadVertexShader = nullptr;
 
+static constexpr UInt32 uiShaderLoaderVersion = 120;
+
 void CubemapRenderer::CheckShaderLoader() {
 	auto hShaderLoader = GetModuleHandle("Fallout Shader Loader.dll");
 	if (!hShaderLoader) {
@@ -203,8 +205,10 @@ void CubemapRenderer::CheckShaderLoader() {
 	auto pQuery = (pfn_NVSEPlugin_Query*)GetProcAddress(hShaderLoader, "NVSEPlugin_Query");
 	PluginInfo kInfo = {};
 	pQuery(nullptr, &kInfo);
-	if (kInfo.version < 110) {
-		MessageBox(NULL, "Fallout Shader Loader is outdated.\nPlease update it to use Real Time Reflections!.", "Real Time Reflections", MB_OK | MB_ICONERROR);
+	if (kInfo.version < uiShaderLoaderVersion) {
+		char cBuffer[192];
+		sprintf_s(cBuffer, "Fallout Shader Loader is outdated.\nPlease update it to use Real Time Reflections!\nCurrent version: %i.\nMinimum required version: %i.", kInfo.version, uiShaderLoaderVersion);
+		MessageBox(NULL, cBuffer, "Real Time Reflections", MB_OK | MB_ICONERROR);
 		ExitProcess(0);
 	}
 
