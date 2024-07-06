@@ -181,6 +181,7 @@ copy "$(TargetDir)$(TargetName).pdb" "C:\Symbols\$(TargetName).pdb"</Command>
     <ClCompile Include="internal\Bethesda\GridCellArray.cpp" />
     <ClCompile Include="internal\Bethesda\ImageSpaceManager.cpp" />
     <ClCompile Include="internal\Bethesda\ImageSpaceTexture.cpp" />
+    <ClCompile Include="internal\Bethesda\Lighting30Shader.cpp" />
     <ClCompile Include="internal\Bethesda\MemoryManager.cpp" />
     <ClCompile Include="internal\Bethesda\MTRenderingSystem.cpp" />
     <ClCompile Include="internal\Bethesda\PlayerCharacter.cpp" />

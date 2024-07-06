@@ -12,7 +12,7 @@ public:
 	virtual void InitShaders();
 	virtual void InitVertexShaders();
 	virtual void InitPixelShaders();
-	virtual void Func_85();
+	virtual void CreatePasses();
 
 	NiD3DShaderConstantMap* pixelConstantMapTexEffect;
 	NiD3DShaderConstantMap* vertexConstantMap;
@@ -32,6 +32,14 @@ public:
 	enum PixelEntries {
 		kPX_EnvMapToggles = 7,
 	};
+	
+	static Lighting30Shader* GetShader();
+
+	static NiD3DPixelShader* GetPixelShader(UInt32 auID);
+
+	static void SetPixelShader(UInt32 auID, NiD3DPixelShader* apPixelShader);
+
+	void InitPasses();
 };
 
 ASSERT_SIZE(Lighting30Shader, 0xA4);

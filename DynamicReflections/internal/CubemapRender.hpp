@@ -69,6 +69,7 @@ public:
 	static float fInteriorBrightnessMult;
 
 	static void InitHooks();
+	static void LoadShaders();
 	static void CheckILSStatus();
 	static bool SearchCamera(TESObjectCELL* apCell);
 	static void UpdateFog(ShadowSceneNode* apScene, float afViewDistance, NiCamera* apCamera);

@@ -186,6 +186,63 @@ void CubemapRenderer::InitHooks() {
 	ReplaceCall(0xE901D5, NiDX9RenderedCubeMapData::CreateSurf);
 }
 
+typedef NiD3DPixelShader* (__cdecl pfn_CreatePixelShader)(const char* apFilename);
+typedef NiD3DVertexShader*(__cdecl pfn_CreateVertexShader)(const char* apFilename);
+
+void CubemapRenderer::LoadShaders() {
+	auto hShaderLoader = GetModuleHandle("Fallout Shader Loader.dll");
+	if (!hShaderLoader) {
+		MessageBox(NULL, "Fallout Shader Loader not found. Please install it to use Real Time Reflections!.", "Real Time Reflections", MB_OK | MB_ICONERROR);
+		ExitProcess(0);
+	}
+
+	auto pLoadPixelShader = (pfn_CreatePixelShader*)GetProcAddress(hShaderLoader, "CreatePixelShader");
+
+	if (!pLoadPixelShader) {
+		MessageBox(NULL, "Failed to load shader loader functions. How?", "Real Time Reflections", MB_OK | MB_ICONERROR);
+		ExitProcess(0);
+	}
+	
+	bool bFailed = false;
+	for (UInt32 i = 0; i < 2; i++) {
+		char cBuffer[32];
+		UInt32 uiShaderID = i + 57;
+		sprintf_s(cBuffer, "RTR\\SLS20%i.pso", uiShaderID);
+		NiD3DPixelShader* pShader = pLoadPixelShader(cBuffer);
+		if (pShader)
+			ShadowLightShader::SetPixelShader(uiShaderID + 48, pShader);
+		else {
+			_MESSAGE("[ CubemapRenderer::LoadShaders ] Failed to load pixel shader %s", cBuffer);
+			bFailed = true;
+			break;
+		}
+	}
+
+	for (UInt32 i = 0; i < 2; i++) {
+		char cBuffer[32];
+		UInt32 uiShaderID = i + 24;
+		sprintf_s(cBuffer, "RTR\\SM30%i.pso", uiShaderID);
+		NiD3DPixelShader* pShader = pLoadPixelShader(cBuffer);
+		if (pShader)
+			Lighting30Shader::SetPixelShader(uiShaderID, pShader);
+		else {
+			_MESSAGE("[ CubemapRenderer::LoadShaders ] Failed to load pixel shader %s", cBuffer);
+			bFailed = true;
+			break;
+		}
+	}
+
+	if (!bFailed) {
+		ShadowLightShader::InitPasses_2xEnvMap();
+		Lighting30Shader::GetShader()->InitPasses();
+		_MESSAGE("[ CubemapRenderer::LoadShaders ] Shaders loaded successfully");
+	}
+	else {
+		MessageBox(NULL, "Failed to load shaders. Please check your installation.", "Real Time Reflections", MB_OK | MB_ICONERROR);
+		ExitProcess(0);
+	}
+}
+
 void CubemapRenderer::CheckILSStatus() {
 	UInt32 uiILSBase = (UInt32)GetModuleHandle("ImprovedLightingShaders.dll");
 

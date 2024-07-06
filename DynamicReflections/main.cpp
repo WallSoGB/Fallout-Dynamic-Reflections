@@ -21,6 +21,7 @@ void MessageHandler(NVSEMessagingInterface::Message* msg) {
 	switch (msg->type) {
 	case NVSEMessagingInterface::kMessage_DeferredInit:
 		CubemapRenderer::pSourceEyeCubeMap = *(NiSourceTexture**)0x11F9544;
+		CubemapRenderer::LoadShaders();
 		CubemapRenderer::CheckILSStatus();
 		break;
 	case NVSEMessagingInterface::kMessage_PreLoadGame:

@@ -149,6 +149,9 @@
     <ClCompile Include="internal\Gamebryo\NiD3DShader.cpp">
       <Filter>internal\Game\Gamebryo</Filter>
     </ClCompile>
+    <ClCompile Include="internal\Bethesda\Lighting30Shader.cpp">
+      <Filter>internal\Game\Bethesda</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="internal\Defines.hpp">

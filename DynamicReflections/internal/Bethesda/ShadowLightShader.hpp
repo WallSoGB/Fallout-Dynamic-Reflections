@@ -8,24 +8,26 @@ class NiD3DShaderConstantMap;
 class BSFogProperty;
 class BSShaderPPLightingProperty;
 
+NiSmartPointer(NiDX9ShaderDeclaration);
+
 class ShadowLightShader : public BSShader {
 public:
-	virtual void Func_79();
+	virtual void SetupShadowTexture(UInt32 aeRenderPass, BSShaderPPLightingProperty* apShaderProp);
 	virtual void Func_80(); // nullsub
 	virtual void InitShaders();
 	virtual void InitVertexShaders();
 	virtual void InitPixelShaders();
-	virtual void CreatePasses(NiGeometry* pkGeometry);
-	virtual void SetToggles(NiTriStrips* apGeometry, BSFogProperty* apFogProp, NiMaterialProperty* apMatProp);
+	virtual void CreatePasses();
+	virtual void SetToggles(NiGeometry* apGeometry, BSFogProperty* apFogProp, NiMaterialProperty* apMatProp);
 
-	NiDX9ShaderDeclaration* pShaderDeclarationGlowParallaxSkin;
-	NiDX9ShaderDeclaration* pShaderDeclaration70;
-	NiDX9ShaderDeclaration* pShaderDeclarationModelSpaceNormals;
-	NiDX9ShaderDeclaration* pShaderDeclarationLandScape;
-	NiD3DShaderConstantMapPtr spPixelConstantMap;
-	NiD3DShaderConstantMapPtr spVertexConstantMap;
-	NiD3DShaderConstantMapPtr spPixelConstantMap2;
-	NiD3DShaderConstantMapPtr spVertexConstantMap2;
+	NiDX9ShaderDeclarationPtr	spShaderDeclarationGlowParallaxSkin;
+	NiDX9ShaderDeclarationPtr	spShaderDeclarationSkinned;
+	NiDX9ShaderDeclarationPtr	spShaderDeclarationModelSpaceNormals;
+	NiDX9ShaderDeclarationPtr	spShaderDeclarationLandscape;
+	NiD3DShaderConstantMapPtr	spPixelConstantMap;
+	NiD3DShaderConstantMapPtr	spVertexConstantMap;
+	NiD3DShaderConstantMapPtr	spPixelConstantMap2;
+	NiD3DShaderConstantMapPtr	spVertexConstantMap2;
 
 	enum VertexEntries {
 		kVX_WorldViewProjTranspose = 0,
@@ -74,6 +76,16 @@ public:
 	};
 
 	void SetDiffuseMap(BSShaderPPLightingProperty* apShaderProp, UInt32 auiStageNumber, UInt32 auiTextureNumber);
+
+	static ShadowLightShader* GetShader();
+
+	static NiD3DVertexShader* GetVertexShader(UInt32 auID);
+	static void SetVertexShader(UInt32 auID, NiD3DVertexShader* apShader);
+
+	static NiD3DPixelShader* GetPixelShader(UInt32 auID);
+	static void SetPixelShader(UInt32 auID, NiD3DPixelShader* apShader);
+
+	static void InitPasses_2xEnvMap();
 };
 ASSERT_SIZE(ShadowLightShader, 0x8C)
 

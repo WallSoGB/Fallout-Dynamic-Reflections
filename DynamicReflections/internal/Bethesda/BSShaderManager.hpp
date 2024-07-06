@@ -103,4 +103,8 @@ public:
 	static NiTexture* GetEyeReflectionCubeMap() { return *(NiTexture**)0x11F9544; }
 	static void SetArmorReflectionCubeMap(NiTexture* apTexture) { *(NiTexture**)0x11F95D4 = apTexture; }
 	static void SetEyeReflectionCubeMap(NiTexture* apTexture) { *(NiTexture**)0x11F9544 = apTexture; }
+
+	static BSShader* GetShader(Shader aiShaderIndex) {
+		return CdeclCall<BSShader*>(0xB55560, aiShaderIndex);
+	}
 };
