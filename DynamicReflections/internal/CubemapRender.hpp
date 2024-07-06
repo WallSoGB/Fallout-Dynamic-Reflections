@@ -69,6 +69,7 @@ public:
 	static float fInteriorBrightnessMult;
 
 	static void InitHooks();
+	static void CheckShaderLoader();
 	static void LoadShaders();
 	static void CheckILSStatus();
 	static bool SearchCamera(TESObjectCELL* apCell);

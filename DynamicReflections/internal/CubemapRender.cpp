@@ -187,22 +187,36 @@ void CubemapRenderer::InitHooks() {
 }
 
 typedef NiD3DPixelShader* (__cdecl pfn_CreatePixelShader)(const char* apFilename);
-typedef NiD3DVertexShader*(__cdecl pfn_CreateVertexShader)(const char* apFilename);
+typedef NiD3DVertexShader* (__cdecl pfn_CreateVertexShader)(const char* apFilename);
+typedef bool* (__cdecl pfn_NVSEPlugin_Query)(const NVSEInterface* nvse, PluginInfo* info);
 
-void CubemapRenderer::LoadShaders() {
+static pfn_CreatePixelShader* pLoadPixelShader = nullptr;
+static pfn_CreateVertexShader* pLoadVertexShader = nullptr;
+
+void CubemapRenderer::CheckShaderLoader() {
 	auto hShaderLoader = GetModuleHandle("Fallout Shader Loader.dll");
 	if (!hShaderLoader) {
-		MessageBox(NULL, "Fallout Shader Loader not found. Please install it to use Real Time Reflections!.", "Real Time Reflections", MB_OK | MB_ICONERROR);
+		MessageBox(NULL, "Fallout Shader Loader not found.\nPlease install it to use Real Time Reflections!.", "Real Time Reflections", MB_OK | MB_ICONERROR);
 		ExitProcess(0);
 	}
 
-	auto pLoadPixelShader = (pfn_CreatePixelShader*)GetProcAddress(hShaderLoader, "CreatePixelShader");
+	auto pQuery = (pfn_NVSEPlugin_Query*)GetProcAddress(hShaderLoader, "NVSEPlugin_Query");
+	PluginInfo kInfo = {};
+	pQuery(nullptr, &kInfo);
+	if (kInfo.version < 110) {
+		MessageBox(NULL, "Fallout Shader Loader is outdated.\nPlease update it to use Real Time Reflections!.", "Real Time Reflections", MB_OK | MB_ICONERROR);
+		ExitProcess(0);
+	}
+
+	pLoadPixelShader = (pfn_CreatePixelShader*)GetProcAddress(hShaderLoader, "CreatePixelShader");
 
 	if (!pLoadPixelShader) {
 		MessageBox(NULL, "Failed to load shader loader functions. How?", "Real Time Reflections", MB_OK | MB_ICONERROR);
 		ExitProcess(0);
 	}
-	
+}
+
+void CubemapRenderer::LoadShaders() {	
 	bool bFailed = false;
 	for (UInt32 i = 0; i < 2; i++) {
 		char cBuffer[32];

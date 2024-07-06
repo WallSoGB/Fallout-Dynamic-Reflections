@@ -19,6 +19,9 @@ static LPSTR g_CurrentDir;
 
 void MessageHandler(NVSEMessagingInterface::Message* msg) {
 	switch (msg->type) {
+	case NVSEMessagingInterface::kMessage_PostLoad:
+		CubemapRenderer::CheckShaderLoader();
+		break;
 	case NVSEMessagingInterface::kMessage_DeferredInit:
 		CubemapRenderer::pSourceEyeCubeMap = *(NiSourceTexture**)0x11F9544;
 		CubemapRenderer::LoadShaders();
@@ -66,7 +69,6 @@ bool NVSEPlugin_Load(NVSEInterface* nvse) {
 
 	REG_CMD(CubemapRefreshCell);
 	REG_CMD(CubemapSaveToFile);
-
 	if (!nvse->isEditor) {
 		CSimpleIniA ini;
 		ini.SetUnicode();
