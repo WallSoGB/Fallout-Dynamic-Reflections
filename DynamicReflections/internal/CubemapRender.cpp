@@ -174,7 +174,7 @@ void CubemapRenderer::InitHooks() {
 	
 	// Fix water flow speed
 	// Water surface updates every time its renderd, and we don't want water to run 6x its speed if cubemaps are active
-	ReplaceCall(0x559450, TESWater::RenderSurface_Hook);
+	ReplaceCall(0x4E4027, TESWater::RenderSurface_Hook);
 
 	// Disables RefID writes into the shader property. Should be safe.
 	PatchMemoryNop(0x4B6E0E, 5);
