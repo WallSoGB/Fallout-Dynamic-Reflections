@@ -71,7 +71,6 @@ public:
 	static void InitHooks();
 	static void CheckShaderLoader();
 	static void LoadShaders();
-	static void CheckILSStatus();
 	static bool SearchCamera(TESObjectCELL* apCell);
 	static void UpdateFog(ShadowSceneNode* apScene, float afViewDistance, NiCamera* apCamera);
 	static void RestoreFog(ShadowSceneNode* apScene);
